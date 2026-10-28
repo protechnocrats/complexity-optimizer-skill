@@ -190,9 +190,9 @@ Each language file covers built-in data structures and their costs, which struct
 | `WORKFLOW.md` | Report and apply mode: setup, survey, analysis, report, apply, close-out |
 | `WRITING-NEW-CODE.md` | Write mode: which rules apply to new code, sizing the workload, choosing structures, existing-code bottlenecks, tests, summary |
 | `ALGORITHM-ARSENAL.md` | Five triage questions, complexity reference, lower bounds, core techniques with their assumptions, production patterns, bit manipulation, combinations |
-| `ADVANCED-TECHNIQUES.md` | Advanced graph (static and changing), tree, range, DP, search, string, number-theory, numerical, memory-locality, parallelism, lock-contention, streaming, hash-table-design, storage and indexing, spatial, caching and eviction, and specialized-structure techniques |
+| `ADVANCED-TECHNIQUES.md` | Advanced graph (static and changing), tree, range, DP, search, string, number-theory, numerical, machine learning and AI (data, training, inference and LLM serving, model APIs), image and signal processing, computational geometry and CAD, games and simulation, memory-locality, parallelism, lock-contention, streaming, hash-table-design, storage and indexing, spatial, caching and eviction, and specialized-structure techniques |
 | `DIFFERENTIAL-TESTING.md` | How to verify equivalence: reference copies, what to compare, inputs, reporting evidence, benchmarks, memory measurement |
-| `BEHAVIOR-TRAPS.md` | Rewrites that look equivalent but are not, including numerical, hidden-input, cancellation, and security traps |
+| `BEHAVIOR-TRAPS.md` | Rewrites that look equivalent but are not, including numerical, machine-learning, image, geometry, simulation, hidden-input, cancellation, and security traps |
 | `REPORTING.md` | Report format, behavior changes for review, bug log, `NEEDS-TESTING` and `BEHAVIOR-CHANGE` markers |
 | `languages/*.md` | Per-language companions |
 

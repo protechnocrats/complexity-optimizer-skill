@@ -49,6 +49,37 @@ For numerical code, matching outputs on ordinary inputs is not enough evidence. 
 - **Exact versus tolerance comparisons.** Replacing exact equality with a tolerance (or the reverse) changes results.
 - **Reproducibility.** Vectorized, fused multiply-add, and parallel computations can produce different bits from the sequential version, and different results across runs or machines.
 
+## Machine learning
+
+- **Random number consumption.** Reordering, batching, or parallelizing code that draws random numbers (initialization, dropout, shuffling, sampling) changes which number each draw receives, and therefore the results, even when the logic is equivalent. Compare with the same seed and the same draw order, or treat the difference as a behavior change.
+- **Nondeterministic kernels.** Some GPU operations (atomic accumulation, some convolution and scatter algorithms) give different bits on every run. Differential tests need the framework's deterministic mode, or a tolerance the developer approves (`DIFFERENTIAL-TESTING.md`).
+- **Batch-dependent numerics.** Batching, padding, or changing batch size can change results: batch normalization statistics, kernel selection by shape, and reduction order all depend on the batch.
+- **Training versus inference mode.** Dropout and batch normalization behave differently in each mode. A rewrite that runs in the wrong mode, or switches mode, changes outputs.
+- **Data types and promotion.** Lower precision, implicit type promotion, or a different accumulator type changes results, and can overflow (16-bit floats overflow above 65,504).
+- **Tokenization.** Any change to tokenization (merge order, normalization, special tokens) changes model inputs and outputs, even when the text is the same.
+
+## Images and signals
+
+- **Border handling.** Filters treat pixels outside the image in different ways (clamp to edge, mirror, wrap, zero). A rewrite, a separable split, or an FFT must reproduce the original's choice at every border.
+- **Rounding, clamping, and saturation.** 8-bit and 16-bit channels round and clamp at every stored step. Splitting a filter into passes, fusing passes, or using SIMD saturating arithmetic changes where rounding happens, and therefore the output.
+- **Color space and gamma.** Averaging, blending, or resizing in gamma-encoded values gives different results from doing it in linear light. Keep the original's color space for each step.
+- **Premultiplied alpha.** Converting between straight and premultiplied alpha, or filtering one as if it were the other, changes edges and transparent pixels.
+- **Channel order and layout.** RGBA versus BGRA, planar versus interleaved, and row padding (stride) must be preserved where callers or files observe them.
+
+## Geometry
+
+- **Predicate robustness.** Orientation, in-circle, and point-in-polygon tests on nearly degenerate input can flip sign when the same formula is evaluated in a different order or precision. A flipped test changes topology: a different hull, a missing intersection, an invalid mesh.
+- **Tolerances.** Changing an epsilon, where it is applied, or whether a comparison is strict changes which points merge, touch, or intersect.
+- **Degenerate input.** Collinear and coincident points, zero-length edges, zero-area faces, and self-touching polygons are where rewrites most often differ. Test them explicitly.
+- **Orientation and winding.** Output vertex order (clockwise or counterclockwise), face winding, and the starting vertex are observable to callers and renderers.
+
+## Simulation and games
+
+- **Determinism.** Lockstep multiplayer, replays, and saved simulations need identical results on every machine and every run. Reordering floating-point operations, parallelizing, or using fused multiply-add breaks determinism even when results look the same.
+- **Update order.** The order in which objects update within a frame affects outcomes (which collision resolves first, which event fires first). Spatial structures and parallel updates change that order.
+- **Time step.** Changing from variable to fixed time steps, or the step size, changes simulation results.
+- **Frame timing of effects.** Moving work to another frame, a background thread, or an event changes when its effects appear, which players and other systems can observe.
+
 ## Strings and text
 
 - **Length and indexing units.** UTF-16 code units, Unicode scalars, and grapheme clusters give different lengths and indices.

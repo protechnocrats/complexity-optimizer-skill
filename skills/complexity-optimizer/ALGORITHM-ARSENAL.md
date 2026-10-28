@@ -1,6 +1,6 @@
 # Algorithm Arsenal
 
-Use this file in Phase 3 to enumerate candidate approaches. It holds the core techniques. Load [ADVANCED-TECHNIQUES.md](ADVANCED-TECHNIQUES.md) as well when the techniques here do not reach the lower bound, or when the problem is about graphs (static or changing), trees, dynamic programming, combinatorial search, strings, number theory, numerical computation, memory locality, parallelism and vectorization, lock contention, streaming and external memory, hash table design, storage and indexing, spatial data, caching and eviction, or specialized data structures.
+Use this file in Phase 3 to enumerate candidate approaches. It holds the core techniques. Load [ADVANCED-TECHNIQUES.md](ADVANCED-TECHNIQUES.md) as well when the techniques here do not reach the lower bound, or when the problem is about graphs (static or changing), trees, dynamic programming, combinatorial search, strings, number theory, numerical computation, machine learning and AI (data pipelines, training, inference and LLM serving, model API calls), image, video, and signal processing, computational geometry and CAD, games and real-time simulation, memory locality, parallelism and vectorization, lock contention, streaming and external memory, hash table design, storage and indexing, spatial data, caching and eviction, or specialized data structures.
 
 Do not stop at the first technique that improves the bound. Check every section whose signals match, then check the combinations.
 
@@ -44,7 +44,9 @@ Find the row for the candidate's current cost, measured along the call chain (se
 | A product of size variables (O(n·m), O(V·E)) | For each A, scan all B | "Invert the loop" under "Reformulate before choosing": index one side once. Name every variable; the right fix depends on which one is large |
 | O(n log n) | A sort, or n heap or tree operations | Whether the order is observable at all; top-k, min, or max without a full sort ("Priority and selection"); non-comparison sorts for bounded keys |
 | O(n) per call, called many times | Recomputing from scratch on every call | "Precompute once, query many times" and "Incremental maintenance" under "Reformulate before choosing"; "Structures for repeated queries"; "Changing graphs" in `ADVANCED-TECHNIQUES.md` when a graph result is rebuilt after each change |
-| O(n²) over objects in space | Checking every pair of objects for distance, overlap, or collision | "Spatial data" in `ADVANCED-TECHNIQUES.md` |
+| O(n²) over objects in space | Checking every pair of objects for distance, overlap, or collision; every ray against every object | "Spatial data", "Computational geometry and CAD", and "Games and real-time simulation" in `ADVANCED-TECHNIQUES.md` |
+| O(N·k²) over pixels or samples | A filter that visits every neighbor of every pixel or sample | "Image, video, and signal processing" in `ADVANCED-TECHNIQUES.md` |
+| Model training or inference slower than expected | Recomputed attention, host and device synchronization, data loading, or element-by-element loops over tensors | "Machine learning and AI" in `ADVANCED-TECHNIQUES.md` |
 | Cost dominated by page or disk I/O, cache misses, branch misses, or cache hit rate rather than operation count | Data layout, storage structure, or eviction policy, not the algorithm | "Storage and indexing", "Memory locality", and "Caching and eviction" in `ADVANCED-TECHNIQUES.md` |
 
 ## Required enumeration
@@ -231,7 +233,7 @@ Inspect the actual query plan (`EXPLAIN`, `EXPLAIN ANALYZE`, or the database's e
 
 ## Behavior-changing techniques
 
-Some techniques in this file and in `ADVANCED-TECHNIQUES.md` necessarily change observable behavior: element order, laziness, side effects skipped, concurrency, error and crash behavior, approximate instead of exact results, or the shape of what callers receive. Rule 5 applies to every one of them:
+Some techniques in this file and in `ADVANCED-TECHNIQUES.md` necessarily change observable behavior: element order, laziness, side effects skipped, concurrency, error and crash behavior, approximate instead of exact results, different floating-point results, different model outputs, different images or geometry, or the shape of what callers receive. Rule 5 applies to every one of them:
 
 - Never apply a behavior-changing optimization silently.
 - Document it in the report under "Behavior changes for review," with the exact behavior before and after.

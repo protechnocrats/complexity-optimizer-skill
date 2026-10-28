@@ -3,11 +3,11 @@
 Load this file in Phase 3 alongside `ALGORITHM-ARSENAL.md` when:
 
 - the core techniques do not reach the lower bound, or
-- the problem is about graphs (static or changing), trees, dynamic programming, combinatorial search, strings, number theory, numerical computation, memory locality, parallelism and vectorization, lock contention, streaming and external memory, hash table design, storage and indexing, spatial data, caching and eviction, or specialized data structures.
+- the problem is about graphs (static or changing), trees, dynamic programming, combinatorial search, strings, number theory, numerical computation, machine learning and AI (data pipelines, training, inference and LLM serving, model API calls), image, video, and signal processing, computational geometry and CAD, games and real-time simulation, memory locality, parallelism and vectorization, lock contention, streaming and external memory, hash table design, storage and indexing, spatial data, caching and eviction, or specialized data structures.
 
 Read the tables the same way as in `ALGORITHM-ARSENAL.md`: build or preprocessing cost is stated separately from per-query cost, output cost counts, bounds are worst case unless labeled, and "in practice" marks workload-dependent speedups.
 
-These techniques apply to any codebase: operating system kernels, storage and database engines, file systems, compilers, search engines, scientific and financial code, games, infrastructure tooling, backends, and apps. Every rule still applies. In particular:
+These techniques apply to any codebase: operating system kernels, storage and database engines, file systems, compilers, search engines, machine learning and AI systems, image, video, and audio processing, CAD and geometry kernels, scientific and financial code, games and simulations, infrastructure tooling, backends, and apps. Every rule still applies. In particular:
 
 - **Assumptions decide validity.** Each technique below has strict preconditions. Confirm each one from the code and record the evidence.
 - **Most need an implementation inside the project.** Standard libraries rarely include them. Write a focused implementation with its own tests (see "Testing a new data structure" in `DIFFERENTIAL-TESTING.md`) and a comment naming the technique and its complexity (rule 13). If a well-tested library is the better route, ask first (rule 7).
@@ -95,6 +95,7 @@ A static-graph algorithm rerun after every change costs its full price per chang
 | Edit distance when only small distances matter | Banded (Ukkonen) edit distance | A threshold k is known | O(n·m) → O(n·k) |
 | Regular expression with nested or overlapping quantifiers (`(a+)+`, `(a\|a)*`, `.*.*x`), run by a backtracking engine on long or untrusted input | Rewrite the pattern to remove the ambiguity (atomic groups or possessive quantifiers where supported), or switch to a linear-time engine (Thompson NFA or lazy DFA, such as RE2, Rust's `regex`, Go's `regexp`) | Linear-time engines do not support backreferences or lookaround; match semantics must be checked one by one: leftmost-first versus leftmost-longest, capture group contents, Unicode classes, anchors and line modes. A new engine is usually a dependency (rule 7) | Exponential worst case → O(n·m) for text length n and pattern size m |
 | Many regular expressions tried one after another on the same input | One combined alternation, or a regex set that reports every pattern that matched in one pass | Which pattern wins, and in which priority order, matches the original | k passes over the input → one pass |
+| Keyword or term search across many documents by scanning each one | Inverted index: each term maps to a sorted list of the documents (and positions) containing it; ranking such as BM25 computed over those lists only; multi-term queries intersect lists | Tokenization, normalization, matching rules, and result order reproduce the original | O(total text) per query → O(length of the posting lists for the query terms) |
 | Regular expression used only to find a fixed string or a fixed prefix | Plain substring search or prefix check | Same case sensitivity, escaping, and Unicode handling | Constant factor; no engine setup |
 
 ## Number theory and math
@@ -126,6 +127,133 @@ Floating-point results depend on the order and form of every operation. Most tec
 | Matrices or vectors that are mostly zeros | Sparse formats (CSR, CSC, COO) and sparse kernels | Density below a measured threshold (dense kernels win above it); summation order in the kernel may change floating-point results | O(n²) per matrix-vector product → O(nnz), with O(nnz) memory |
 | Tight numeric loops in floating point | SIMD-friendly kernels: contiguous data, no aliasing, no data-dependent branches; vectorized math libraries | Vectorized reductions reorder additions (behavior change); vectorized math functions may round differently | Several times faster per core |
 | Repeated exact arithmetic on integers or rationals carried in floating point | Integer or fixed-point arithmetic | Value ranges fit without overflow; switching from floating point is a behavior change | Faster on many platforms, and exact; required where floating point is unavailable (for example, most kernel code) |
+
+## Machine learning and AI
+
+For code that prepares data, trains or runs models (classical machine learning, deep learning, large language models), or calls model APIs. The rules apply unchanged, with these points made explicit:
+
+- **Changing the model is not an optimization.** A technique that changes model outputs (quantization, pruning, distillation, approximate attention, lower precision, a different tokenizer or sampling method) changes behavior. Report it with the measured effect on outputs and on the project's quality metrics, and let the developer decide (rule 5). Techniques that compute the same function (KV caching, exact attention kernels, reordering a matrix chain) are optimizations, subject to floating-point rounding: see "Machine learning" in `BEHAVIOR-TRAPS.md`.
+- **Find the bottleneck first.** Training and inference are often limited by data loading, host-to-device transfers, synchronization points, or memory, not arithmetic. Profile with the framework's own profiler before choosing a technique (rule 8).
+- **Interpreted loops over array elements are a hidden cost.** In Python and other interpreted hosts, an element-by-element loop over arrays or tensors runs orders of magnitude slower than one vectorized library call that does the same work.
+
+### Data and features
+
+| Signal | Technique | Valid when | Typical result |
+|---|---|---|---|
+| Interpreted loop over array or tensor elements | Vectorized array operations (NumPy-style, the framework's tensor operations) | The same arithmetic in the same order, or the developer accepts reordered floating-point results | Same complexity; often 10 to 100 times faster |
+| Pairwise distances computed in a double loop | Matrix form: ‖a − b‖² = ‖a‖² + ‖b‖² − 2a·b, as one matrix multiply | Behavior change in floating point: cancellation can make small distances inaccurate or slightly negative; clamp at zero and compare the results | O(n·m·d) operations either way, run as one optimized matrix multiply; much faster in practice |
+| Near-duplicate detection across many documents (training-data deduplication) | MinHash with locality-sensitive hashing | Approximate: can miss or add pairs. **Behavior change**: developer review. Exact duplicates: hash the normalized content instead | O(n²) comparisons → about O(n) expected |
+| Exact repeated substrings across a large corpus | Suffix array (see "Strings") | — | O(n²) or worse → O(n log n) build |
+| Categorical feature represented one-hot and multiplied by a weight matrix | Embedding lookup (index the weight row directly) | Same values; identical results | O(V·d) per item → O(d), for vocabulary size V and dimension d |
+| Many small, irregular samples padded to the longest in each batch | Bucket samples by length, or pack several samples into one sequence with attention masking | Packing must keep samples from attending to each other; batch composition changes, which is a behavior change in training | Less computation spent on padding |
+| Data loading slower than the model step (the device waits) | Prefetching, parallel loader workers, caching decoded samples, binary formats instead of re-parsing text each epoch | Randomness per worker seeded so runs stay reproducible; sample order changes are a behavior change in training | Device utilization up; same results when order is preserved |
+
+### Training
+
+| Signal | Technique | Valid when | Typical result |
+|---|---|---|---|
+| Product of several matrices, or matrices applied to a vector, multiplied in a fixed order | Choose the multiplication order: matrix chain DP, or simply right-to-left when the chain ends in a vector, (A·B)·v → A·(B·v) | Floating-point results can differ in the last bits (behavior change if exact output matters) | For n×n matrices and a vector: O(n³) → O(n²); in general, the minimum-cost order |
+| Gradients of a scalar loss with respect to many parameters computed by perturbing each parameter | Reverse-mode automatic differentiation (backpropagation) | The function is differentiable where evaluated | O(n) evaluations for n parameters → about one forward and one backward pass |
+| Host and device synchronizing inside the training loop (reading a scalar loss value, moving a tensor to the CPU, printing or logging device values every step) | Keep values on the device, accumulate on the device, read back every k steps | What is logged and when changes (behavior change if logs are consumed) | Removes a stall per step |
+| Many small kernel launches per step | Operator fusion via the framework's compiler or graph mode | Results usually identical or within floating-point rounding; compilation adds startup time | Constant factor; fewer memory round trips |
+| Model or batch does not fit in device memory | Gradient checkpointing (recompute activations in the backward pass); gradient accumulation across smaller batches | Only when the current memory use exceeds the device budget at the required model or batch size: it trades time for memory, the exception to rule 2. Gradient accumulation can change results (batch normalization, floating-point summation order) | Activation memory O(L) → about O(√L) for L layers, for about one extra forward pass |
+| Training in full precision on hardware with fast low-precision units | Mixed precision with loss scaling | **Behavior change**: numerics differ; compare quality metrics | Several times faster on supporting hardware; less memory |
+
+### Inference and LLM serving
+
+| Signal | Technique | Valid when | Typical result |
+|---|---|---|---|
+| Autoregressive decoding that recomputes attention over the whole prefix for every new token | Key-value (KV) cache: store each layer's keys and values for past tokens | Same model and inputs; results identical up to floating-point rounding | Per token: O(t²) → O(t) attention work at position t; whole sequence O(n³) → O(n²) |
+| Many requests share the same prompt prefix (system prompt, few-shot examples, document) | Prefix caching: reuse the KV cache of a shared prefix, kept in a radix tree keyed by token sequence | Same model, weights, and tokenization; cache bounded with eviction (rule 1) | Prefix computation once instead of per request |
+| Attention over long sequences limited by memory traffic | Exact IO-aware attention kernels (tiled, online softmax, such as FlashAttention) | Exact attention; results within floating-point rounding | Same O(n²) compute; O(n) extra memory instead of O(n²); much faster |
+| Attention cost too high even with exact kernels | Sliding-window, sparse, or linear attention | **Changes the model**: requires retraining or produces different outputs. Developer decision | O(n²) → O(n·w) or O(n) |
+| Requests served one at a time on hardware that is idle between them | Dynamic batching; continuous (iteration-level) batching for generation | Latency per request may rise; results unchanged per request unless batch-dependent numerics apply | Throughput up several times |
+| KV cache memory fragmented, limiting batch size | Paged KV cache (fixed-size blocks with a block table) | — | More concurrent sequences in the same memory |
+| Decoding latency bound by one token per forward pass of a large model | Speculative decoding with a small draft model | With rejection sampling it preserves the output distribution; greedy outputs stay identical; individual sampled outputs differ for the same seed (behavior change if seeded outputs are compared) | Fewer large-model passes per token |
+| Full sort of the vocabulary for top-k or top-p sampling, or beam search | Partial selection (argpartition, heap of size k), then sort only the candidates | Tie order matches the original when it is observable | O(V log V) → O(V + k log k) per step |
+| Byte-pair-encoding tokenizer that rescans the whole sequence for the best pair after every merge | Priority queue of candidate pairs over a linked list of tokens | Merge priority and tie order identical, so tokens are identical | O(n²) → O(n log n) per sequence |
+| Lower-precision or compressed weights | Quantization (8-bit, 4-bit), pruning, distillation | **Changes the model**: measure quality on the project's evaluation set. Developer decision | Less memory and faster inference |
+| Constrained (structured) generation that checks every vocabulary token against a grammar or regular expression at each step | Compile the grammar or expression into an automaton once, and precompute for each automaton state the set of allowed tokens (a token mask) | Same grammar semantics, tokenization, and handling of tokens that span grammar boundaries | O(V · check) per step → one mask lookup per step, plus O(V) to apply it |
+| Retrieval (for example, retrieval-augmented generation) that scans every document or chunk per query | Inverted index for keyword search (see "Strings"); exact or approximate vector index for embeddings (see "Classical machine learning" and "Spatial data") | Approximate vector search is a behavior change | O(corpus) per query → index lookups |
+| Re-embedding or reprocessing unchanged documents on every run | Cache results keyed by a hash of the content plus the model name and version and the preprocessing settings | Same model and preprocessing; bounded storage (rule 1) | Work proportional to changed documents |
+
+### Classical machine learning
+
+| Signal | Technique | Valid when | Typical result |
+|---|---|---|---|
+| k-means where most distance computations cannot change any assignment | Elkan's or Hamerly's algorithm (triangle-inequality bounds) | Exact: same assignments as standard Lloyd iterations from the same initialization | Most distance computations skipped |
+| k-means on data too large for full passes | Mini-batch k-means | **Behavior change**: different clusters. Developer decision | Each iteration O(b·k·d) instead of O(n·k·d) |
+| Decision-tree split search that re-sorts feature values at every node | Pre-sort once and maintain order, or histogram-based splits (bin features once) | Pre-sorting is exact; histogram binning can choose different splits (behavior change) | O(n log n) per node per feature → O(n), or O(n + bins) with histograms |
+| k-nearest-neighbor queries by full scan | k-d tree or ball tree in low dimensions; see "Spatial data" for high dimensions | Exact when the tree search is exact; ties must be broken as the original does | O(n) per query → about O(log n) on suitable data |
+| Similarity search over embeddings (retrieval, recommendations, deduplication) | Exact: one matrix multiply against all vectors, then partial top-k selection. Approximate: HNSW, IVF, or product quantization (see "Spatial data") | Approximate methods can miss true neighbors: **behavior change**, developer review | Exact: same O(n·d), vectorized. Approximate: sublinear queries in practice |
+
+### Calling model APIs
+
+Model API calls are network calls: rule 10 applies.
+
+| Signal | Technique | Valid when | Typical result |
+|---|---|---|---|
+| One API call per item in a loop (embeddings, classifications) | Batch endpoints, or bounded concurrency within the provider's rate limits | Errors, retries, and partial failures handled per item as before; ordering of results preserved | Fewer round trips; higher throughput |
+| Same request sent repeatedly | Cache responses keyed by every input that affects the output: model name and version, full prompt, parameters, tools, and settings | Cached output must be acceptable as the answer. With sampling (temperature above 0), a cache returns one fixed sample where the original produced a new one each time: **behavior change**. Bounded, with invalidation when the model version changes | API calls avoided |
+| Long shared prompt prefix sent with every request | The provider's prompt caching, with the stable prefix placed first | Prompt content unchanged | Lower latency and cost for the cached prefix |
+
+## Image, video, and signal processing
+
+For photo editing, image and video pipelines, computer vision, rendering, and audio. N is the number of pixels or samples and k the filter width. Outputs must match the original exactly, including border handling, rounding, clamping to the channel range, color space, and alpha handling: see "Images and signals" in `BEHAVIOR-TRAPS.md`. Filters that only approximate the original are behavior changes, however close they look.
+
+| Signal | Technique | Valid when | Typical result |
+|---|---|---|---|
+| Box (mean) filter, or sums over many rectangular windows | Summed-area table (integral image), or running sums along rows and then columns | Integer accumulators wide enough for the largest sum (for example, width × height × 255 for 8-bit channels); in floating point, reordered sums are a behavior change | O(N·k²) → O(N), independent of window size |
+| 2D convolution with a separable kernel (Gaussian, box, the components of Sobel) | Two 1D passes: rows, then columns | Kernel is exactly separable; intermediate results kept at full precision, or the rounding difference approved (rounding after the first pass changes 8-bit output) | O(N·k²) → O(N·k) |
+| Convolution with a large kernel that is not separable | FFT-based convolution, with padding that reproduces the original border handling | Floating-point results differ: behavior change | O(N·k²) → O(N log N) |
+| Gaussian blur with a large radius | Three successive box blurs, or a recursive (IIR) Gaussian filter | **Approximate**: behavior change, developer review | O(N·k) → O(N), independent of radius |
+| Median filter with a large window | Sliding histogram (Huang), or constant-time median filtering (Perreault-Hébert) | Integer pixels with a small value range (8-bit); exact | O(N·k² log k) → O(N·k), or O(N) |
+| Erosion, dilation, or minimum and maximum over a window | van Herk/Gil-Werman algorithm, or a monotonic deque along rows and then columns | Rectangular (separable) structuring element; exact | O(N·k²) → O(N) |
+| Per-pixel point operation on 8-bit or 16-bit channels (gamma, curves, levels, thresholds) | Lookup table with one entry per possible input value, built once | Output depends only on the input value and fixed parameters; exact | Expensive arithmetic (`pow`, `exp`) per pixel → one table read |
+| Color transform that depends on all channels together (color grading, color space conversion) | 3D lookup table with interpolation | **Approximate** when interpolated: behavior change; exact only at full resolution | Constant work per pixel |
+| Labeling connected regions | Two-pass connected-component labeling with union-find | Same connectivity (4 or 8) and same label numbering, or relabeled to match | Repeated flood fills and rescans → O(N α(N)) |
+| Distance from every pixel to the nearest feature pixel | Exact Euclidean distance transform (Felzenszwalb-Huttenlocher) | Exact; chamfer and other approximations are behavior changes | O(N · features) → O(N) |
+| The same image processed at several scales (zoom levels, coarse-to-fine search, previews) | Image pyramid or mipmaps built once | Each level uses the same resampling filter as the original | Each scale computed once instead of per use |
+| Per-pixel loops that walk memory out of order, or run in interpreted code | Process in memory order, in cache-sized tiles; vectorize with SIMD or the platform's image library | Identical results, including rounding and saturation | Constant factor, often large |
+| Video frames reprocessed in full when little changes between them | Process only changed regions (dirty rectangles, exact change masks) | Change detection compares exact pixel values; motion-estimated reuse is a behavior change | Work proportional to the change |
+| Audio or signal filtering with a long FIR filter | FFT convolution with overlap-add or overlap-save | Floating-point differences: behavior change | O(n·k) → O(n log k) |
+
+## Computational geometry and CAD
+
+For CAD and CAM, GIS, 3D modeling, mesh processing, and geometry kernels. Robustness decides correctness: a rewrite that evaluates the same predicate in a different order can flip an orientation or in-out test on nearly degenerate input and produce different topology. Keep the original predicates, or use exact or adaptive-precision ones, and test degenerate cases (collinear, coincident, touching, zero-area): see "Geometry" in `BEHAVIOR-TRAPS.md`.
+
+| Signal | Technique | Valid when | Typical result |
+|---|---|---|---|
+| Convex hull found by testing every candidate edge or point | Andrew's monotone chain or Graham scan | Collinear points on the hull, duplicates, and output order and orientation handled as the original does | O(n³) or O(n²) → O(n log n) |
+| All intersecting pairs among many line segments | Bentley-Ottmann sweep line | Robust predicates; touching, overlapping, and vertical segments handled as the original does | O(n²) → O((n + k) log n) for k intersections |
+| Closest pair of points | Divide and conquer, or a grid with cell size equal to the best distance so far | Ties resolved as the original does | O(n²) → O(n log n), or O(n) expected |
+| Many point-in-polygon tests against the same polygon | Precomputed structure: a grid over the polygon's edges, a trapezoidal decomposition, or binary search over a triangle fan for convex polygons | Points on the boundary classified exactly as the original does | O(e) per query for e edges → O(log e), or about O(1) per query with a grid on typical data |
+| Ray casting, picking, or collision against many triangles or objects | Bounding volume hierarchy (BVH), built with the surface area heuristic | Exact intersection test still runs on candidates; the nearest-hit rule and tie-breaking match | O(n) per ray → about O(log n) |
+| Triangulating a simple polygon by ear clipping | Partition into monotone pieces, then triangulate each | Produces a different valid triangulation: behavior change when callers observe the triangles | O(n²) → O(n log n) |
+| Delaunay triangulation by incremental insertion with a linear search for each point's triangle | Randomized incremental insertion with a point-location structure, or divide and conquer | Ties among cocircular points resolved as before, otherwise behavior change | O(n²) → O(n log n) expected |
+| Mesh adjacency queries (neighbors of a vertex, faces around an edge) answered by scanning all faces | Half-edge (or winged-edge) structure, or adjacency lists built once | Half-edge needs a manifold mesh; non-manifold meshes need a general adjacency structure | O(F) per query → O(degree) |
+| Merging nearby vertices (welding) by comparing every pair | Spatial hash with cell size equal to the tolerance, checking the neighboring cells | Same tolerance rule and same choice of the surviving vertex | O(n²) → O(n) expected |
+| Polygon Boolean operations (union, intersection, difference) by testing every edge pair | Sweep-line clipping (Vatti, Martinez-Rueda) | Robust predicates; output orientation and vertex order match, or the difference is approved | O(n·m) → O((n + m + k) log(n + m)) |
+| Evaluating Bezier or B-spline curves at many parameter values | De Casteljau or de Boor evaluation, or Horner's method on the power form; forward differencing for evenly spaced steps | Forward differencing accumulates rounding error: behavior change. Changing the evaluation method changes floating-point results | Per point O(d²) → O(d) for degree d; O(1) per step with forward differencing |
+| Exact (arbitrary-precision) geometric predicates evaluated on every test | Floating-point filter with an exact fallback (adaptive-precision predicates, as in Shewchuk's) | Results identical to the exact predicate | Exact results at close to floating-point speed |
+
+## Games and real-time simulation
+
+A frame has a fixed budget (16.7 ms at 60 frames per second), so the worst frame matters more than the average: measure frame-time percentiles and spikes, not only means. Games that rely on determinism (lockstep multiplayer, replays) must produce identical results on every machine: see "Simulation and games" in `BEHAVIOR-TRAPS.md`. Spatial queries and broad-phase collision are under "Spatial data"; ray casts and visibility use the BVH under "Computational geometry and CAD".
+
+| Signal | Technique | Valid when | Typical result |
+|---|---|---|---|
+| Many agents each finding a path to the same goal | Flow field: one Dijkstra or BFS outward from the goal, then each agent follows the cheapest neighbor | Agents share the goal and the cost map; among equal-cost paths, agents may pick different ones (behavior change if observable) | A searches per goal → one search per goal change |
+| Pathfinding on a large uniform-cost grid | Jump point search | Uniform costs and the original movement rules (diagonals, corner cutting); optimal length, but may choose a different path among equals | Same optimal length with far fewer nodes expanded |
+| Pathfinding over large maps, repeated often | Hierarchical pathfinding (HPA*), navigation meshes, or precomputed portal graphs | **HPA* paths can be slightly longer than optimal: behavior change** | Large practical reduction in search work |
+| Every object's world transform recomputed every frame | Dirty flags on the transform hierarchy: recompute only the subtrees that changed | Every change marks its node | O(all nodes) → O(changed nodes) per frame |
+| Every object updated or polled every frame although few change | Event-driven updates, timers (timing wheel), sleeping physics bodies | Update order and the timing of effects are preserved, or the change is approved | Work proportional to active objects |
+| Every object drawn or tested for visibility each frame | Frustum culling over a BVH or grid; occlusion culling | Culling is conservative: it never removes a visible object | O(objects) → about O(log n + visible objects) |
+| Distant objects rendered or simulated at full detail | Level of detail (LOD) for meshes, animation, and simulation | **Changes what is rendered or simulated: behavior change**, developer review | Work roughly proportional to screen-space importance |
+| Narrow-phase collision between convex shapes by testing all pairs of features | Separating axis theorem, or GJK with EPA for penetration depth | Same contact results; a changed tolerance is a behavior change | Feature pairs O(n·m) → about O(n + m) |
+| Allocation, garbage collection, or asset loading during gameplay | Object pools, preallocated buffers, asynchronous asset streaming | Pooled objects are fully reset before reuse | Removes frame-time spikes |
+| Game objects with their data scattered across memory | Entity-component-system storage: each component type in a contiguous array | See "Memory locality" | Fewer cache misses per frame |
+| Assets, events, or properties looked up by string name during frames | Hash names to integer IDs once at load time | IDs are unique; collisions detected at load time | String hashing and comparison removed from frames |
 
 ## Memory locality
 
@@ -174,7 +302,7 @@ On multicore systems, threads waiting on the same lock, atomic variable, or cach
 | Data read far more often than written, with readers serialized by a lock | Reader-writer lock; or read-copy-update (RCU) or copy-on-write snapshots, where writers publish a new version and readers take no lock | Readers tolerate seeing the previous version until their read finishes (otherwise behavior change); old versions are freed only after every reader that may hold them has finished | Reads proceed in parallel without lock acquisition; writes pay a copy |
 | Lock held during slow work (I/O, allocation, logging, callbacks) | Shrink the critical section: prepare outside the lock, hold it only to publish | Every invariant the lock protects still holds whenever another thread can observe the data | Less waiting; same total work |
 | Single producer and single consumer exchanging items through a locked queue | Lock-free bounded ring buffer with acquire and release memory ordering | Exactly one producer thread and one consumer thread; memory ordering correct on every target architecture; behavior when full (block, drop, or fail) matches the original | No lock per item |
-| Several threads updating fields on the same cache line | See "false sharing" under "Memory locality" | — | — |
+| Several threads updating fields on the same cache line | See the false-sharing row (padding or per-thread accumulators) under "Memory locality" | — | — |
 
 General lock-free and wait-free structures (multi-producer queues, lock-free hash maps) are subtle and easy to get wrong: prefer the platform's own concurrent structures, or a reviewed library with the developer's permission (rule 7).
 
@@ -252,7 +380,6 @@ Hit rate decides whether a cache pays off, and the eviction policy decides the h
 | Predecessor and successor queries over a bounded integer universe u, at very high volume | Van Emde Boas tree, or a hierarchical bitset (y-fast trie for sparse sets) | Integer keys in [0, u); memory O(u) for van Emde Boas, less for hierarchical bitsets | O(log n) → O(log log u) |
 | Sorted map needed but not in the standard library | Treap, skip list, or another balanced tree | — | O(n) → O(log n) expected |
 | Overlap queries over many intervals | Interval tree, or a segment tree over compressed coordinates | — | O(n) per query → O(log n + k) |
-| Nearest-neighbor or range search in low dimensions | k-d tree; see "Spatial data" for alternatives | Low dimensionality (roughly under 10); data mostly static | Build: O(n log n). Query: O(log n) average for well-distributed data, degrading toward O(n) for skewed data or higher dimensions; workload-dependent |
 | Cheap pre-check before an expensive exact lookup | Bloom filter | Used **only as a pre-filter** before the exact check, so false positives never change results | Avoids most expensive lookups |
 | Cheap pre-check before an exact lookup, where items are also removed | Cuckoo filter | Used **only as a pre-filter**; delete only items that were inserted; inserts can fail when the filter is nearly full, so handle that by resizing or falling back to the exact check | Same benefit as a Bloom filter, plus deletion; less space than a Bloom filter at low false-positive rates |
 | Timers or timeouts scheduled and cancelled far more often than they fire (network stacks, kernels, connection pools) | Hierarchical timing wheel | Firing times rounded to the wheel's granularity match the original, otherwise behavior change | O(log n) heap insert and cancel → O(1) |
