@@ -18,7 +18,7 @@ C's standard library has almost no data structures. What it provides:
 **Not in the standard library: hash maps, hash sets, balanced trees, heaps, queues, deques, bitsets, or tries.** Options, in order:
 
 1. Use what the project already has: its own containers, or a library it already depends on (GLib, APR, klib, uthash, stb_ds).
-2. A small in-project implementation with its own tests: a growable array, an open-addressing hash table for a known key type (see "Hash table design" in `ADVANCED-TECHNIQUES.md`), a binary heap, a ring buffer, or a bitset over `uint64_t` words.
+2. A small in-project implementation with its own tests: a growable array, an open-addressing hash table for a known key type (see "Hash table design" in `techniques/data-structures.md`), a binary heap, a ring buffer, or a bitset over `uint64_t` words.
 3. A new library, including copying a single-header library into the tree, is a dependency. Ask first (rule 7).
 
 ## Hidden costs

@@ -1,6 +1,6 @@
 # Algorithm Arsenal
 
-Use this file in Phase 3 to enumerate candidate approaches. It holds the core techniques. Load [ADVANCED-TECHNIQUES.md](ADVANCED-TECHNIQUES.md) as well when the techniques here do not reach the lower bound, or when the problem is about graphs (static or changing), trees, dynamic programming, combinatorial search, strings, number theory, numerical computation, machine learning and AI (data pipelines, training, inference and LLM serving, model API calls), image, video, and signal processing, computational geometry and CAD, games and real-time simulation, memory locality, parallelism and vectorization, lock contention, streaming and external memory, hash table design, storage and indexing, spatial data, caching and eviction, or specialized data structures.
+Use this file in Phase 3 to enumerate candidate approaches. It holds the core techniques. Load [ADVANCED-TECHNIQUES.md](ADVANCED-TECHNIQUES.md) as well when the techniques here do not reach the lower bound, or when the problem falls in a specialized domain. It is a short index: it routes each domain (graphs, numerics, machine learning, images, geometry, games, storage, concurrency, and others) to its own file under `techniques/`, and holds the rules shared by all of them.
 
 Do not stop at the first technique that improves the bound. Check every section whose signals match, then check the combinations.
 
@@ -38,16 +38,16 @@ Find the row for the candidate's current cost, measured along the call chain (se
 | Current cost | Usual cause | Look first at |
 |---|---|---|
 | O(n!) | Trying every ordering or assignment | Bitmask DP ("Bit manipulation"); sorting by a key when an exchange argument shows the order is determined ("Reusing work", greedy) |
-| O(cⁿ) | Recursion that branches over overlapping subproblems; trying every subset | Memoization, DP, knapsack DP ("Reusing work"); meet-in-the-middle, branch and bound, constraint propagation ("Combinatorial search" in `ADVANCED-TECHNIQUES.md`). If the problem is NP-hard in general, check whether small integer weights or targets allow a pseudo-polynomial DP, or whether the input size keeps exact search affordable |
-| O(n³) or higher polynomial | Triple-nested loops; a quadratic loop that calls a linear helper | Precompute what the innermost loop recomputes (prefix sums, a hash index); sort plus two pointers ("Combinations"); "Dynamic programming optimizations" in `ADVANCED-TECHNIQUES.md` |
+| O(cⁿ) | Recursion that branches over overlapping subproblems; trying every subset | Memoization, DP, knapsack DP ("Reusing work"); meet-in-the-middle, branch and bound, constraint propagation ("Combinatorial search" in `techniques/sequences-dp-search.md`). If the problem is NP-hard in general, check whether small integer weights or targets allow a pseudo-polynomial DP, or whether the input size keeps exact search affordable |
+| O(n³) or higher polynomial | Triple-nested loops; a quadratic loop that calls a linear helper | Precompute what the innermost loop recomputes (prefix sums, a hash index); sort plus two pointers ("Combinations"); "Dynamic programming optimizations" in `techniques/sequences-dp-search.md` |
 | O(n²) | Nested loops over related collections; a linear search or front removal inside a loop | "Lookup, membership, counting", "Order and search", "Structures for repeated queries", "Combinations" |
 | A product of size variables (O(n·m), O(V·E)) | For each A, scan all B | "Invert the loop" under "Reformulate before choosing": index one side once. Name every variable; the right fix depends on which one is large |
 | O(n log n) | A sort, or n heap or tree operations | Whether the order is observable at all; top-k, min, or max without a full sort ("Priority and selection"); non-comparison sorts for bounded keys |
-| O(n) per call, called many times | Recomputing from scratch on every call | "Precompute once, query many times" and "Incremental maintenance" under "Reformulate before choosing"; "Structures for repeated queries"; "Changing graphs" in `ADVANCED-TECHNIQUES.md` when a graph result is rebuilt after each change |
-| O(n²) over objects in space | Checking every pair of objects for distance, overlap, or collision; every ray against every object | "Spatial data", "Computational geometry and CAD", and "Games and real-time simulation" in `ADVANCED-TECHNIQUES.md` |
-| O(N·k²) over pixels or samples | A filter that visits every neighbor of every pixel or sample | "Image, video, and signal processing" in `ADVANCED-TECHNIQUES.md` |
-| Model training or inference slower than expected | Recomputed attention, host and device synchronization, data loading, or element-by-element loops over tensors | "Machine learning and AI" in `ADVANCED-TECHNIQUES.md` |
-| Cost dominated by page or disk I/O, cache misses, branch misses, or cache hit rate rather than operation count | Data layout, storage structure, or eviction policy, not the algorithm | "Storage and indexing", "Memory locality", and "Caching and eviction" in `ADVANCED-TECHNIQUES.md` |
+| O(n) per call, called many times | Recomputing from scratch on every call | "Precompute once, query many times" and "Incremental maintenance" under "Reformulate before choosing"; "Structures for repeated queries"; "Changing graphs" in `techniques/graphs-and-trees.md` when a graph result is rebuilt after each change |
+| O(n²) over objects in space | Checking every pair of objects for distance, overlap, or collision; every ray against every object | "Spatial data" in `techniques/spatial-data.md`, "Computational geometry and CAD" in `techniques/geometry-and-cad.md`, and "Games and real-time simulation" in `techniques/games-and-simulation.md` |
+| O(N·k²) over pixels or samples | A filter that visits every neighbor of every pixel or sample | "Image, video, and signal processing" in `techniques/images-and-signals.md` |
+| Model training or inference slower than expected | Recomputed attention, host and device synchronization, data loading, or element-by-element loops over tensors | "Machine learning and AI" in `techniques/machine-learning.md` |
+| Cost dominated by page or disk I/O, cache misses, branch misses, or cache hit rate rather than operation count | Data layout, storage structure, or eviction policy, not the algorithm | "Storage and indexing" in `techniques/data-at-scale.md`, "Memory locality" in `techniques/hardware-and-concurrency.md`, and "Caching and eviction" in `techniques/data-structures.md` |
 
 ## Required enumeration
 
@@ -162,7 +162,7 @@ How to read the tables in this file and in `ADVANCED-TECHNIQUES.md`:
 |---|---|---|---|
 | Shortest path, unweighted | BFS | — | Path enumeration → O(V + E) |
 | Shortest path from many sources at once | Multi-source BFS | Unweighted | k BFS runs → one O(V + E) |
-| Shortest path, weighted | Dijkstra with a heap | **Non-negative weights only.** Negative weights: see `ADVANCED-TECHNIQUES.md` | O(V²) → O((V + E) log V) |
+| Shortest path, weighted | Dijkstra with a heap | **Non-negative weights only.** Negative weights: see "Graphs" in `techniques/graphs-and-trees.md` | O(V²) → O((V + E) log V) |
 | Shortest path, weights 0 or 1 | 0-1 BFS with a deque | Weights are exactly 0 or 1 | O((V + E) log V) → O(V + E) |
 | Dependency order, build order | Topological sort (Kahn or DFS) | Graph is a DAG; detect and report cycles the same way the original did | O(V + E) |
 | Directed cycle or deadlock detection | Three-color DFS, or topological-sort failure | — | O(V + E) |
@@ -261,7 +261,7 @@ Bits win cleanly in specific cases in any kind of codebase. Use them when they r
 | Subset DP (assignments, small traveling salesperson) | DP indexed by bitmask | O(n!) → O(2^n · n²) |
 | Packing several small fields into one key | Shifts and masks into a `Long` | Composite hash keys without allocating pair objects |
 
-Watch for: signed versus unsigned shifts, integer width (JavaScript bitwise operators work on 32-bit signed integers), overflow when shifting by the full width, and readability. See the language files for exact operators. More bit-based techniques (XOR basis, GF(2) elimination, sum over subsets) are in `ADVANCED-TECHNIQUES.md`.
+Watch for: signed versus unsigned shifts, integer width (JavaScript bitwise operators work on 32-bit signed integers), overflow when shifting by the full width, and readability. See the language files for exact operators. More bit-based techniques are in `techniques/math-and-numerics.md` (XOR basis, GF(2) elimination) and `techniques/sequences-dp-search.md` (sum over subsets DP).
 
 ## Combinations
 
@@ -288,7 +288,7 @@ The best solution often connects two techniques. Check these whenever a problem 
 | Coordinate compression + segment tree | Changing rank and range queries over large values | Avoids structures indexed by raw values |
 | Sweep line + coordinate compression + Fenwick tree | Counting overlaps, inversions, or active values | O(n²) → O(n log n) |
 
-More combinations (meet-in-the-middle, Euler tour, tree rerooting, and others) are in `ADVANCED-TECHNIQUES.md`.
+More combinations are in the "Combinations" sections of `techniques/graphs-and-trees.md` (Euler tour, tree rerooting, heavy-light decomposition), `techniques/sequences-dp-search.md` (meet-in-the-middle), and `techniques/strings-and-text.md` (Aho-Corasick with DP).
 
 ## When the best technique is not available
 
