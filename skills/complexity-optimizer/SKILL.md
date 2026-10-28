@@ -62,6 +62,8 @@ Companion files available now:
 | `*.swift`, `Package.swift`, `*.xcodeproj` | [languages/SWIFT.md](languages/SWIFT.md) |
 | `*.js`, `*.mjs`, `*.ts`, `*.tsx`, `package.json`, `tsconfig.json` | [languages/JAVASCRIPT-TYPESCRIPT.md](languages/JAVASCRIPT-TYPESCRIPT.md) |
 | `*.cs`, `*.csproj`, `*.sln` | [languages/CSHARP.md](languages/CSHARP.md) |
+| `*.c`, `*.h` (without C++ sources), C build files (`Makefile`, `CMakeLists.txt`, `meson.build`) | [languages/C.md](languages/C.md) |
+| `*.rs`, `Cargo.toml` | [languages/RUST.md](languages/RUST.md) |
 | Any other language | [languages/GENERIC.md](languages/GENERIC.md) |
 
 In a project with several languages, load the file for each language you analyze.

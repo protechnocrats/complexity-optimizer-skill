@@ -165,9 +165,11 @@ The rules, workflow, algorithm arsenal, differential testing, and behavior traps
 | Swift | `languages/SWIFT.md` |
 | JavaScript and TypeScript | `languages/JAVASCRIPT-TYPESCRIPT.md` |
 | C# | `languages/CSHARP.md` |
+| C | `languages/C.md` |
+| Rust | `languages/RUST.md` |
 | Any other language | `languages/GENERIC.md`: the agent builds the same language profile before analyzing |
 
-Each language file covers built-in data structures and their costs, which structures need a dependency, hidden costs, platform hot spots (Android, iOS, web, .NET), bit-manipulation APIs, language-specific behavior traps, and test and benchmark tooling.
+Each language file covers built-in data structures and their costs, which structures need a dependency, hidden costs, platform hot spots (Android, iOS, web, .NET, native), bit-manipulation APIs, language-specific behavior traps, and test and benchmark tooling.
 
 ## Files
 
