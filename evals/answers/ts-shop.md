@@ -18,6 +18,7 @@ Sizes come from `src/volumes.ts`. Bug planted: T5.
 | T10 | `packing.ts` `packsNeeded` | Exponential starting point, 6 (nontrivial), technique assumptions, caching |
 | T11 | `restock.ts` `restockList` | Cost along the call chain, object key trap |
 | T12 | `invoices.ts` `monthlyStatements` | Cost along the call chain through a callback and a class, first-match duplicates, aliasing |
+| TW1 | New `valuation.ts` (write mode, separate run) | Mode selection, workload sizing, cost of existing code called from new code, no silent changes to existing code, per-call cache scope, object key trap |
 
 ## T1. `shortestHops`
 
@@ -98,3 +99,29 @@ Sizes come from `src/volumes.ts`. Bug planted: T5.
 - **Pass:** the cost is reported along the whole chain (`monthlyStatements` → `invoiceTotal` → `priceOf`); the first listing still wins for duplicate SKUs; the index stores the entry object (or reads `cents` at lookup time), because callers keep references to the entries they pass to `add`, and the original sees later changes to `cents`; `priceOf`'s signature and the summation order are unchanged.
 - **Behavior risks the agent must name:** a caller changing an entry's `sku` after `add` makes any SKU index stale. Tests cannot rule that out, so it goes under behavior changes for review or is called out as unverified.
 - **Fail:** `new Map(entries.map(...))` or `set` on every `add`, so the **last** listing wins (verified: a duplicate SKU listed at 100 then 999 returns 999 instead of 100); storing `cents` values, so later changes to an entry are missed (verified: the original returns 150 after the change, the snapshot returns 100); only `invoiceTotal` or only `priceOf` analyzed in isolation.
+
+## TW1. `stockValuation` (write mode)
+
+Run this case in its own fresh run directory, not after the report and apply prompts. Prompt:
+
+```
+Add a function stockValuation(stores, priceBook) in a new file src/valuation.ts. For each store, in the order given, it returns the store id and the total value in cents of the stock on hand: for every SKU with a positive net quantity in that store's movements, quantity times the SKU's price from the price book. Add tests.
+```
+
+- **Expected mode:** write mode, stated in the first reply. No mode question is needed: the request is plainly new code.
+- **Sizes** (from `volumes.ts`): S = 300 stores, M = 25,000 movements per store, D ≤ about 8,000 distinct SKUs (the catalog size), P = 250,000 price-book entries.
+- **Expected:**
+  - Net quantities per store aggregated in one pass into a `Map` from SKU to quantity: O(M) per store. Not `stockOnHand` called once per SKU, which is O(D · M) per store: 300 · 8,000 · 25,000 = 6 · 10¹⁰ steps.
+  - `PriceBook.priceOf` is a linear `find` (O(P)), and `entries` is private, so new code cannot index it. Each distinct SKU is priced at most once per `stockValuation` call, through a `Map` created inside the call: at most D · P = 2 · 10⁹ comparisons, instead of 300 · 8,000 · 250,000 = 6 · 10¹¹ when every store prices every SKU again, or more when pricing per movement.
+  - `PriceBook` and `inventory.ts` are left unchanged. The summary reports `priceOf` as the remaining bottleneck, cost along the call chain included, recommends indexing inside `PriceBook` (the T12 fix, keeping first-listing-wins), and asks whether to apply it.
+  - Total: O(S · M + D · P) expected with the existing `PriceBook`; O(S · M + P) once the `PriceBook` index is approved.
+- **Pass:** all of the above; output in store order; SKUs with zero or negative net quantity excluded; a "Performance decisions" list with size assumptions and complexities; tests include a case at realistic size that runs in reasonable time, with no timing assertion.
+- **Bonus:** the price cache stores the price, which is safe within one synchronous call (nothing can call `add` or change an entry in between), and the summary says why.
+- **Fail:**
+  - `stockOnHand` called once per SKU per store.
+  - `priceOf` called once per SKU per store, or once per movement.
+  - `PriceBook` changed (an index added, `entries` made public) without asking.
+  - A module-level price cache that outlives the call: later `add` calls or changed entries are then missed.
+  - Quantities kept in a plain object without guarding prototype keys (a SKU named `constructor` reads `Object.prototype.constructor` as its starting quantity), as in T11.
+  - An optimization report produced instead of the feature; a dependency added; parallelism or workers introduced.
+

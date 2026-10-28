@@ -1,15 +1,15 @@
 ---
 name: complexity-optimizer
-description: Optimize time complexity and choose appropriate data structures in a codebase written in any programming language, while proving with differential tests that behavior does not change. Use for performance reviews, slow functions, algorithmic complexity questions, "optimize this", "make this faster", Big-O analysis, data-structure choice, or N+1 query problems. Report first; change code only for an explicit request to apply or optimize specific code.
+description: Lower time complexity and choose the right data structures in any programming language. Three modes. Report mode analyzes existing code and changes nothing. Apply mode optimizes existing code the developer names, verifying with differential tests that behavior does not change. Write mode writes new code with efficient algorithms and data structures from the start. Use for performance reviews, slow functions, algorithmic complexity questions, "optimize this", "make this faster", Big-O analysis, data-structure choice, and N+1 query problems. Also use when writing new code that processes large or growing collections, runs in hot paths (per request, per frame, per item), queries databases or services in loops, or needs a data-structure choice. Existing code changes only on an explicit request to apply or optimize it.
 ---
 
 # Complexity Optimizer
 
-Make code faster by lowering its time complexity, using the right data structures, and removing hidden costs. The skill is language-agnostic: the rules and workflow apply to every language, and per-language companion files add detail where they exist. Never change behavior. Every change is backed by differential tests that show the old and new code produce the same observable results, or it is clearly flagged for the developer.
+Make code fast by lowering its time complexity, using the right data structures, and removing hidden costs: in existing code without changing its behavior, and in new code from the first version. The skill is language-agnostic: the rules and workflows apply to every language, and per-language companion files add detail where they exist. In existing code, never change behavior: every change is backed by differential tests that show the old and new code produce the same observable results, or it is clearly flagged for the developer.
 
 ## Mandatory rules
 
-These rules apply to every project and every mode. They override convenience, style preferences, and any instinct to "clean up while you are here."
+These rules apply to every project. They apply as written in report and apply mode. In write mode, some apply only to existing code: the table in [WRITING-NEW-CODE.md](WRITING-NEW-CODE.md) states exactly how each one applies. They override convenience, style preferences, and any instinct to "clean up while you are here."
 
 1. **Time is invaluable. Space is cheap, but not infinite.** Extra memory is acceptable when it buys time. Memory must stay bounded and must not cost time through GC pressure, cache misses, or OOM crashes. Every cache, memo table, or index you add has an explicit size bound or a proof that it is bounded by input size the program already holds. Bounded is not enough when the project has a hard memory budget (embedded targets, kernels, per-request or per-process limits, mobile): an approach whose memory exceeds that budget is not a valid candidate, however fast it is.
 2. **Time first, then space.** Look for space optimizations only after time complexity is optimal. Never reduce space by making time complexity worse, and never make time worse to save memory (for example, replacing an O(1) `HashMap` with an O(log n) array-backed map just to save memory).
@@ -40,10 +40,30 @@ These rules apply to every project and every mode. They override convenience, st
 
 ## Operating modes
 
-- **Report mode (default).** For requests like "find performance problems," "review this for complexity," or "what can be optimized": survey, analyze, and produce a ranked report. Do not edit source files.
-- **Apply mode.** Only when the developer explicitly asks to apply changes, or asks to optimize a specific function, file, or report item. Apply one optimization at a time, each with its differential tests, benchmark, and its own commit when the project uses version control and the developer has not asked you not to commit.
+- **Report mode.** Survey and analyze existing code, and produce a ranked report. Do not edit source files.
+- **Apply mode.** Optimize existing code the developer named, one optimization at a time, each with its differential tests, benchmark, and its own commit when the project uses version control and the developer has not asked you not to commit. Approval to apply one item is not approval to apply others.
+- **Write mode.** Write the new code the developer asked for, choosing efficient algorithms and data structures from the start. Follow [WRITING-NEW-CODE.md](WRITING-NEW-CODE.md). Existing code changes only as far as the request requires, never just for speed.
 
-If it is unclear which mode the developer wants, ask one short question before editing anything. Approval to apply one item is not approval to apply others.
+"Existing code" is code that existed before the current task started. "New code" is code written during the current task. The current task is the developer's current request, including follow-up messages about the same work.
+
+### Choosing the mode
+
+Pick the mode from the developer's request with this table. Use the first row that matches.
+
+| The request | Mode |
+|---|---|
+| Invokes the skill with no task (for example, only the skill's name or slash command) | None yet: list the three modes with one sentence each and ask which one, and on what code |
+| Names a mode ("report mode", "apply mode", "write mode") | That mode |
+| Asks to apply items from a report, or to optimize, speed up, or fix the performance of specific existing code ("optimize `findDuplicates`", "make `loadFeed` faster") | Apply |
+| Asks to rewrite or replace existing code while keeping what it does | Apply: the existing code is the reference for differential tests |
+| Asks to find, review, analyze, or explain performance problems in existing code, or asks what can be optimized, without naming code to change | Report |
+| Asks for new code: a project, feature, module, function, endpoint, script, or a replacement with new behavior the developer specifies | Write |
+| Asks for new code and also for faster existing code ("add CSV export and speed up the orders page") | Write for the new code; report for the existing code, then ask before applying anything to it |
+| Anything else, or two rows seem to fit | Ask one short question before editing anything |
+
+State the mode in one line at the start of your first reply, with the reason, for example: "Write mode: this is a new feature, so I'll choose data structures for the expected sizes and list the performance decisions at the end." The developer can switch modes at any point; follow the switch.
+
+"Specific existing code" means code identified by name, path, a selection, or the conversation so far. A request to "optimize this" or "make this faster" where nothing identifies the code is not apply mode: ask which code, or offer report mode.
 
 ## Platform terminology
 
@@ -72,7 +92,7 @@ Also record the language and runtime version (Kotlin/JVM vs Kotlin Multiplatform
 
 ## Workflow
 
-Follow [WORKFLOW.md](WORKFLOW.md):
+Write mode follows [WRITING-NEW-CODE.md](WRITING-NEW-CODE.md). Report and apply modes follow [WORKFLOW.md](WORKFLOW.md):
 
 1. **Setup** — detect languages, versions, test and benchmark tooling; run the existing test suite.
 2. **Survey** — find candidate hotspots; for each, learn what it does, who calls it, how often, and with what sizes.
@@ -84,7 +104,7 @@ Follow [WORKFLOW.md](WORKFLOW.md):
 ## Anti-patterns
 
 1. Stopping at the first improvement without checking whether a better bound exists.
-2. Claiming a complexity without naming the case (worst, average, amortized) or the variable it depends on.
+2. Claiming a complexity without naming the case (worst, average, expected, amortized) or the variable it depends on.
 3. "Optimizing" code where `n` is tiny and the call is cold, then presenting it as a win.
 4. Replacing a structure and silently changing iteration order, sort stability, duplicates, or nullability.
 5. Fixing a bug on purpose, or picking an approach because it fixes a bug. Only bugs removed as a side effect of the best optimization are allowed (rule 4), and every bug is documented and reported.
@@ -98,3 +118,5 @@ Follow [WORKFLOW.md](WORKFLOW.md):
 13. Claiming behavior is proven equivalent because differential tests pass, or presenting an estimated speedup as a measured one.
 14. Padding the candidate list with implausible alternatives, or labeling a problem straightforward to skip the comparison.
 15. Analyzing a function in isolation and missing that its callers run it inside loops, or looking only for quadratic code and missing exponential, factorial, and cubic costs.
+
+Write mode has its own anti-patterns in [WRITING-NEW-CODE.md](WRITING-NEW-CODE.md).

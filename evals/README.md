@@ -10,7 +10,7 @@ These evals check whether an agent using the skill makes the right call on code 
 evals/
 ├── fixtures/
 │   ├── kotlin-shop/   ← 14 cases (Kotlin/JVM, Gradle, JUnit 4)
-│   ├── ts-shop/       ← 12 cases (TypeScript, Node's built-in test runner, no dependencies)
+│   ├── ts-shop/       ← 12 cases + 1 write-mode case (TypeScript, Node's built-in test runner, no dependencies)
 │   ├── swift-shop/    ← 10 cases (Swift Package Manager, XCTest); not yet verified on a toolchain
 │   ├── c-shop/        ← 10 cases (C11, plain asserts, optional sanitizers)
 │   └── rust-shop/     ← 12 cases (Cargo, no dependencies)
@@ -78,6 +78,15 @@ cd evals/fixtures/rust-shop && cargo test
    ```
 
 5. **Score** the run in a copy of `SCORECARD.md` using `answers/<fixture>.md`.
+
+## Running a write-mode evaluation
+
+Write-mode cases (IDs ending in `W1`, `W2`, and so on) test new code, not existing code. Run each in its own fresh run directory, never after the report and apply prompts, since those would already have optimized the code the new feature calls.
+
+1. Create a run directory as above, with or without the skill.
+2. Send the prompt from the case's section of the answer key, unchanged.
+3. Decline every approval and dependency request, as above. Write mode should still finish the feature without them.
+4. Check that existing files are unchanged unless the case says otherwise (`git status`, `git diff`), that the new tests and the existing suite pass, and score the case.
 
 ## Getting meaningful results
 

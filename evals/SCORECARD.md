@@ -13,6 +13,8 @@ Copy this file for each evaluation session. Score each case **P** (pass), **F** 
 | Check | Run 1 | Run 2 | Run 3 |
 |---|---|---|---|
 | Skill loaded (with-skill runs only) | | | |
+| Stated the mode at the start, and it was the right one | | | |
+| Write mode: changed no existing code without asking | | | |
 | Ran the existing test suite before analysis | | | |
 | Report mode changed no files | | | |
 | Every bug reported in the conversation and in the bug log | | | |
@@ -42,7 +44,7 @@ Copy this file for each evaluation session. Score each case **P** (pass), **F** 
 | 13 | | | | |
 | 14 | | | | |
 
-Use the case IDs from the answer key (for example K1, T1, S1, C1, R1). Leave unused rows empty.
+Use the case IDs from the answer key (for example K1, T1, S1, C1, R1, and TW1 for write mode). Leave unused rows empty. Score write-mode cases on their own scorecard, since they run in separate sessions.
 
 ## Totals
 

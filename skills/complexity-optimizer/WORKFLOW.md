@@ -1,6 +1,6 @@
 # Workflow
 
-Follow these phases in order. Report mode stops after Phase 4.
+Follow these phases in order in report and apply mode. Report mode stops after Phase 4. Write mode does not use this file; it follows `WRITING-NEW-CODE.md`.
 
 ## Phase 1: Setup
 

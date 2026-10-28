@@ -1,6 +1,6 @@
 # complexity-optimizer
 
-A coding-agent skill that makes code faster by lowering time complexity and choosing the right data structures, without changing behavior. Every change is backed by differential tests that run the original and the optimized code on the same inputs and compare the results.
+A coding-agent skill that makes code fast by lowering time complexity and choosing the right data structures. In existing code it changes nothing about behavior: every change is backed by differential tests that run the original and the optimized code on the same inputs and compare the results. In new code it chooses efficient algorithms and data structures from the first version.
 
 The skill is agent-neutral and language-agnostic. It works with any coding agent that supports skills (a folder with a `SKILL.md` and linked reference files), in any programming language.
 
@@ -69,16 +69,21 @@ Re-run the install command to fetch the latest version, or `git pull` your clone
 
 ## How it works
 
-### Two modes
+### Three modes
 
 | Mode | Triggered by | What happens |
 |---|---|---|
-| **Report** (default) | "find performance problems", "review this for complexity", "what can be optimized?" | The agent surveys, analyzes, and returns a ranked report. **No code changes.** |
-| **Apply** | "apply items 1 and 3", "optimize `findDuplicates` in `Util.kt`" | The agent changes only what you named, one optimization at a time, with tests and a benchmark for each. |
+| **Report** | "find performance problems", "review this for complexity", "what can be optimized?" | The agent surveys existing code, analyzes it, and returns a ranked report. **No code changes.** |
+| **Apply** | "apply items 1 and 3", "optimize `findDuplicates` in `Util.kt`" | The agent changes only the existing code you named, one optimization at a time, with differential tests and a benchmark for each. |
+| **Write** | "add CSV export for orders", "build a rate limiter", "write a function that merges these feeds" | The agent writes the new code you asked for, choosing algorithms and data structures for the expected input sizes, and ends with a short list of its performance decisions. It does not change existing code just for speed; if existing code is the bottleneck, it tells you and asks. |
 
-If the request is ambiguous, the agent asks before editing. Approving one item never approves the others.
+The agent names the mode it picked in one line at the start, so you can redirect it. If the request is ambiguous, or you invoke the skill with no task, it asks. Approving one item never approves the others.
+
+Write mode works only when the agent loads the skill for the task. Agents load skills by matching the request against the skill's description, which covers new code that handles large or growing data, hot paths, database or service calls in loops, and data-structure choices. For a small, ordinary feature the agent may not load it. To make sure it is used for all new code in a project, add a line to the project's agent instructions (`CLAUDE.md`, `AGENTS.md`, or your agent's equivalent): `Use the complexity-optimizer skill in write mode when writing new code.`
 
 ### Workflow
+
+Report and apply mode:
 
 1. **Setup:** detects languages and versions, finds your test and benchmark tooling, and runs your existing test suite. If tests already fail, it stops and tells you.
 2. **Survey:** finds candidate hotspots and learns what each one does, who calls it, how often, and with what input sizes.
@@ -87,9 +92,11 @@ If the request is ambiguous, the agent asks before editing. Approving one item n
 5. **Apply** (only on approval): writes differential tests against the original first, makes the change, runs all tests, benchmarks before and after, and commits each optimization separately.
 6. **Close out:** summarizes what was applied, what is marked as needing testing, bugs found, and pending dependency requests.
 
+Write mode: estimates input sizes and call frequency for each part of the new code, picks algorithms and data structures to match, keeps calls into slow existing code to a minimum, writes tests that include realistic sizes, and lists its performance decisions with their complexity and size assumptions.
+
 ## Getting the best results
 
-- **Start in report mode.** Read the report, then approve items by ID. You stay in control of every change.
+- **For existing code, start in report mode.** Read the report, then approve items by ID. You stay in control of every change.
 - **Start from a clean working tree on a new branch.** Each optimization lands as its own commit, so any one can be reverted.
 - **Share what you know about performance.** Profiler output, slow screens, slow endpoints, or "this list can hold 50,000 items" helps the agent focus on what matters. Without it, the agent estimates input sizes from the code and says so.
 - **Narrow the scope for large projects.** Point it at a module, a directory, a file, or a single function instead of the whole repository.
@@ -120,6 +127,10 @@ apply items 1 and 3 from the optimization report
 
 ```
 optimize findDuplicates in app/src/main/java/com/example/Util.kt
+```
+
+```
+add an endpoint that returns each customer's lifetime spend; we have about 2 million orders
 ```
 
 ```
@@ -176,7 +187,8 @@ Each language file covers built-in data structures and their costs, which struct
 | File | Purpose |
 |---|---|
 | `SKILL.md` | Mandatory rules, modes, language detection, workflow overview, anti-patterns |
-| `WORKFLOW.md` | Setup, survey, analysis, report, apply, close-out |
+| `WORKFLOW.md` | Report and apply mode: setup, survey, analysis, report, apply, close-out |
+| `WRITING-NEW-CODE.md` | Write mode: which rules apply to new code, sizing the workload, choosing structures, existing-code bottlenecks, tests, summary |
 | `ALGORITHM-ARSENAL.md` | Five triage questions, complexity reference, lower bounds, core techniques with their assumptions, production patterns, bit manipulation, combinations |
 | `ADVANCED-TECHNIQUES.md` | Advanced graph (static and changing), tree, range, DP, search, string, number-theory, numerical, memory-locality, parallelism, lock-contention, streaming, hash-table-design, storage and indexing, spatial, caching and eviction, and specialized-structure techniques |
 | `DIFFERENTIAL-TESTING.md` | How to verify equivalence: reference copies, what to compare, inputs, reporting evidence, benchmarks, memory measurement |
