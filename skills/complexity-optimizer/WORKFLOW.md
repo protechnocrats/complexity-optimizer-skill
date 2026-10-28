@@ -34,11 +34,11 @@ For each remaining candidate, record:
 1. **Problem statement.** Restate the function as an abstract problem ("count pairs with sum k," "find the latest event per user," "check membership against a fixed list"). Abstract statements match known techniques.
 2. **Current complexity.** Time and space, in every size variable, labeled worst, average, or amortized. Include hidden costs from library calls.
 3. **Lower bound.** The best complexity any correct algorithm could achieve, with the reason. See "Lower bounds" in `ALGORITHM-ARSENAL.md`.
-4. **Candidates.** At least three approaches from `ALGORITHM-ARSENAL.md` (and `ADVANCED-TECHNIQUES.md` when the core techniques do not reach the lower bound or the problem domain calls for it), including at least one combination when the problem has more than one dimension (ordering plus lookup, range plus count, and so on). For each: time, space, the assumptions it needs and the evidence from the code that they hold, standard library or dependency, behavior risks.
+4. **Candidates.** From `ALGORITHM-ARSENAL.md` (and `ADVANCED-TECHNIQUES.md` when the core techniques do not reach the lower bound or the problem domain calls for it), in proportion to difficulty (rule 6). Straightforward: the strongest candidate plus a brief reason alternatives are unnecessary. Nontrivial: at least three plausible approaches, including at least one combination when the problem has more than one dimension (ordering plus lookup, range plus count, and so on). For each: time, space (preprocessing separately from per-query cost), the assumptions it needs and the evidence from the code that they hold, standard library or dependency, behavior risks.
 5. **Choice.** The best approach and why. If it does not reach the lower bound, explain why the gap remains (for example, a better bound needs a dependency the developer has not approved, or needs preprocessing that the call pattern cannot amortize).
 6. **Space check.** Only after time is optimal: can the chosen approach use less memory without changing its time complexity? Confirm every new cache or index is bounded.
 7. **Behavior risks.** Walk `BEHAVIOR-TRAPS.md` and list every trap the change could hit.
-8. **Provability.** Whether differential tests can cover all observable behavior, or which part cannot be proven (concurrency, real database ordering, timing, platform rendering).
+8. **Verifiability.** Which observable behavior differential tests can cover, and which they cannot (concurrency, real database ordering, timing, platform rendering, numerical edge cases).
 9. **Known behavior changes.** Any observable behavior the approach changes, even for the better. These go in the report's "Behavior changes for review" section and are never applied without explicit approval (rule 5).
 10. **Bugs noticed.** Anything that looks wrong in the original. Record it for the bug log; do not fix it. Note whether the code will be optimized (rule 4): if not, it stays exactly as is; if so, note whether the chosen approach keeps the bug or removes it as a side effect.
 
@@ -52,15 +52,16 @@ In report mode, stop here and present the report. Ask which items to apply and r
 
 For each approved item, one at a time:
 
-1. **Characterize the original.** Write differential tests per `DIFFERENTIAL-TESTING.md`, with the original implementation copied verbatim as the reference. Run them against the unchanged code first. They must pass, which proves the harness is wired correctly.
+1. **Characterize the original.** Write differential tests per `DIFFERENTIAL-TESTING.md`, with the original implementation copied verbatim as the reference. Run them against the unchanged code first. They must pass, which shows the harness is wired correctly.
 2. **Change the code.** Make the smallest change that implements the chosen approach. Keep the signature and contract. Add a short comment where the technique is not obvious.
 3. **Verify.** Run the differential tests, then the full existing suite. Re-walk the behavior traps for this change and confirm each is covered by a test or ruled out by analysis.
-4. **Benchmark.** Measure the original and the new version at realistic `n` and at a larger `n`. Record the numbers. If the new version is not faster at realistic sizes, do not keep it unless the developer agrees for scaling reasons.
-5. **Handle unprovable parts and behavior changes.** If any behavior cannot be proven, or the change alters behavior in any way, stop and ask the developer (rule 5). If they approve, add the `NEEDS-TESTING` or `BEHAVIOR-CHANGE` marker from `REPORTING.md`.
-6. **Commit.** One optimization per commit, with a message that states the before and after complexity, the benchmark result, and the tests added. Do not mix bug fixes, formatting, or unrelated refactors into the commit.
+4. **Benchmark.** Measure time and memory for the original and the new version at realistic `n`, at a larger `n`, and on worst-case inputs where relevant, following `DIFFERENTIAL-TESTING.md`. Record the numbers as measured. If the new version is not faster at realistic sizes, do not keep it unless the developer agrees for scaling reasons. If benchmarking cannot be run, say so and report the expected gain as estimated only.
+5. **Handle unverified parts and behavior changes.** If any behavior cannot be verified, or the change alters behavior in any way, stop and ask the developer (rule 5). If they approve, add the `NEEDS-TESTING` or `BEHAVIOR-CHANGE` marker from `REPORTING.md`.
+6. **Re-run after the final edit.** If anything changed after the last test run (review fixes, comments, formatting), run the differential tests and the full suite again. Results from an earlier version of the code do not count.
+7. **Commit.** One optimization per commit, with a message that states the before and after complexity, the benchmark result, and the tests added. Do not mix bug fixes, formatting, or unrelated refactors into the commit.
 
 If a differential test fails, the optimization is wrong. Fix the optimization, never the test. If the failure reveals that the original behavior is itself a bug, record it in the bug log and follow rule 4: if the best optimization removes the bug as a side effect, confirm that outputs differ only on the bug-triggering inputs and document it; otherwise keep matching the original.
 
 ## Phase 6: Close out
 
-Update the report with what was applied, skipped, or rejected; final benchmark numbers; the bug log; and the full lists of `NEEDS-TESTING` and `BEHAVIOR-CHANGE` items. State plainly which items were proven equivalent, which were accepted by the developer without full proof, and which knowingly change behavior.
+Update the report with what was applied, skipped, or rejected; final benchmark numbers; the bug log; and the full lists of `NEEDS-TESTING` and `BEHAVIOR-CHANGE` items. State plainly which items were verified by tests (with the evidence), which were accepted by the developer with unverified behavior, and which knowingly change behavior. Never describe any item as proven equivalent.

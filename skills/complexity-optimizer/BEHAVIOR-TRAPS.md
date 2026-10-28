@@ -36,10 +36,18 @@ Rewrites that look equivalent but are not. Walk this list for every candidate in
 
 ## Numbers
 
+For numerical code, matching outputs on ordinary inputs is not enough evidence. Test the edge values listed in `DIFFERENTIAL-TESTING.md` (NaN, infinities, signed zero, subnormals, extreme magnitudes).
+
+
 - **Overflow.** A closed-form formula or a different summation order can overflow where the loop did not, or the reverse. Some languages wrap silently, others trap or crash.
 - **Floating-point association.** `(a + b) + c` is not `a + (b + c)`. Prefix sums, reordering, and parallel reduction change results.
 - **Integer division and rounding.** Rewritten arithmetic can round differently.
 - **Bit manipulation width.** Shifts beyond the type width, signed versus unsigned shifts, and 32-bit limits in some runtimes.
+- **Catastrophic cancellation.** Rewriting `a − b` forms (for example, expanding or factoring a formula) can lose most significant digits when the operands are close.
+- **Overflow and underflow in intermediate values.** A rearranged formula can overflow to infinity or underflow to zero in an intermediate step even when the final result fits.
+- **NaN, infinity, and signed zero.** NaN propagates differently through min/max, comparisons, and sorting; `-0.0` and `0.0` compare equal but differ in division and formatting. A rewrite must handle them exactly as the original did.
+- **Exact versus tolerance comparisons.** Replacing exact equality with a tolerance (or the reverse) changes results.
+- **Reproducibility.** Vectorized, fused multiply-add, and parallel computations can produce different bits from the sequential version, and different results across runs or machines.
 
 ## Strings and text
 
@@ -48,7 +56,22 @@ Rewrites that look equivalent but are not. Walk this list for every candidate in
 
 ## Purity and caching
 
-- **Memoizing an impure function.** If the function reads time, randomness, mutable state, configuration, the database, or the network, a cache returns stale results.
+### Hidden inputs
+
+A function is not pure just because its arguments are unchanged. Before caching or memoizing, verify that the result does not depend on any of these:
+
+- the current time, time zone, daylight-saving transitions, or calendar;
+- locale, language, or culture settings;
+- environment variables, feature flags, runtime configuration, or experiment assignments;
+- the file system, network resources, or other external state;
+- random number generators, random seeds, or nondeterministic iteration order;
+- the current user, tenant, session, or permissions;
+- process-specific state (process ID, memory addresses, hash seeds).
+
+### Caching traps
+
+- **Memoizing an impure function.** If the function depends on any hidden input above, or on mutable state or the database, a cache returns stale or wrong results.
+- **Cache scope.** State whether a cache lives per call, per object, or process-wide. A wider scope than the original lifetime of the data causes staleness and leaks across users.
 - **Cache invalidation.** A cache must be invalidated whenever any input it depends on changes.
 - **Bounded caches evict.** Eviction changes which calls hit the slow path; that is fine only if the function is pure.
 
@@ -57,6 +80,29 @@ Rewrites that look equivalent but are not. Walk this list for every candidate in
 - **Thread safety.** Replacing a synchronized or concurrent structure with an unsynchronized one, or adding shared mutable caches, introduces races.
 - **Iterator invalidation.** Modifying a collection while iterating it throws or skips elements, depending on the platform.
 - **Changed concurrency.** Running previously sequential work concurrently changes ordering, error behavior (fail-fast versus continue), rate limiting, and resource usage.
+
+## Cancellation, timeouts, and resources
+
+An optimization can return the same values in tests while changing production behavior:
+
+- **Cancellation.** Batched or parallel work may ignore cancellation that the per-item loop honored, or cancel more work than before.
+- **Timeouts.** One timeout around a batch behaves differently from a timeout per item; a slow item can now fail the whole batch.
+- **Resource lifetimes.** File handles, database connections, streams, and locks may be held longer (or released earlier) when work is batched, cached, or made lazy.
+- **Partial failure and cleanup.** Cleanup and rollback must still happen when only part of a batch succeeds.
+- **Lock ordering.** Changing the order in which locks are taken, or holding a lock across more work, can introduce deadlocks and starvation.
+- **Connection and thread pools.** More concurrency can exhaust pools that were sized for sequential use.
+
+## Security-sensitive behavior
+
+An optimization can be faster while making the system less secure. Treat every item below as a regression, never as a valid optimization:
+
+- **Constant-time code.** Do not replace constant-time comparisons or computations (secrets, tokens, MACs, password hashes) with early-exit or data-dependent versions.
+- **Authorization and validation.** Early exits, caching, batching, and reordering must not skip, reorder, or weaken authentication, authorization, or input validation checks.
+- **Cache keys.** A cache key must include every input that affects the result, including user, tenant, permission, locale, and configuration context. Omitting one can leak data across users.
+- **Adversarial inputs.** Hash-based structures can degrade to their worst case under hash flooding when attackers control keys; prefer structures with worst-case guarantees (or randomized hashing) for untrusted input.
+- **Resource exhaustion.** A faster average case with a much worse worst case (unbounded caches, quadratic behavior on pathological input, unbounded recursion) can create a denial-of-service risk.
+
+If an existing security weakness is found, it is a bug: document it and report it (rule 4).
 
 ## Errors and limits
 

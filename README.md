@@ -82,7 +82,7 @@ If the request is ambiguous, the agent asks before editing. Approving one item n
 
 1. **Setup:** detects languages and versions, finds your test and benchmark tooling, and runs your existing test suite. If tests already fail, it stops and tells you.
 2. **Survey:** finds candidate hotspots and learns what each one does, who calls it, how often, and with what input sizes.
-3. **Analyze:** states the theoretical lower bound, compares at least three approaches (including combinations such as hash map plus prefix sum, or sort plus two pointers), and checks each technique's assumptions against the code.
+3. **Analyze:** states the theoretical lower bound and compares approaches in proportion to difficulty: at least three plausible ones (including combinations such as hash map plus prefix sum) for nontrivial problems, or the strongest one with a short reason for straightforward ones. It checks each technique's assumptions against the code.
 4. **Report:** ranks items by real-world impact.
 5. **Apply** (only on approval): writes differential tests against the original first, makes the change, runs all tests, benchmarks before and after, and commits each optimization separately.
 6. **Close out:** summarizes what was applied, what is marked as needing testing, bugs found, and pending dependency requests.
@@ -95,7 +95,8 @@ If the request is ambiguous, the agent asks before editing. Approving one item n
 - **Narrow the scope for large projects.** Point it at a module, a directory, a file, or a single function instead of the whole repository.
 - **Have a working test suite.** The agent runs it before and after every change. Projects with no tests still work, because the agent writes differential tests, but your own tests catch more.
 - **Answer dependency requests deliberately.** When the best data structure is not in your language's standard library, the agent asks before adding a library and explains what it buys. You can decline; it then uses the best option without the dependency.
-- **Follow up on `NEEDS-TESTING` markers.** If a change could not be fully proven equivalent and you approved it anyway, the agent marks it in the code and in the report with exactly what to verify. Search for `NEEDS-TESTING` before releasing.
+- **Check the verification evidence.** For each applied item, the report lists the inputs and properties tested, the tests and tools actually run, what remains unverified, and which performance numbers are measured versus estimated. Passing tests are evidence, not proof.
+- **Follow up on `NEEDS-TESTING` markers.** If a change could not be fully verified and you approved it anyway, the agent marks it in the code and in the report with exactly what to verify. Search for `NEEDS-TESTING` before releasing.
 - **Review behavior changes.** If an optimization would change behavior in any way, even for the better, the agent lists it under "Behavior changes for review" with the before and after behavior and waits for your decision. Approved ones are marked `BEHAVIOR-CHANGE` in the code.
 - **Read the bug log.** Bugs the agent notices are documented in `BUGS-FOUND.md` and never fixed on purpose. Fix them separately. Each entry says whether the code was left as is, optimized with the bug preserved, or optimized with the bug removed as a side effect.
 
@@ -138,12 +139,12 @@ For small results, the report is shown in the conversation instead of written to
 
 1. **Time is invaluable. Space is cheap, but not infinite.** Memory may be spent to save time, but it must stay bounded and must not cost time through GC pressure, cache misses, or OOM crashes.
 2. **Time first, then space.** Space is optimized only after time is optimal, and never at the expense of time.
-3. **Understand first, then prove behavior is unchanged** with differential tests that compare return values, input mutation, exceptions, side effects, and ordering.
+3. **Understand first, then verify behavior is unchanged** with differential tests that compare return values, input mutation, exceptions, side effects, and ordering. Passing tests are reported as evidence, never as proof.
 4. **Bugs are always documented and reported, never fixed on purpose.** If the buggy code is not optimized (already optimal, or behavior cannot be guaranteed unchanged), it is left exactly as is. If it is optimized, the optimization is applied and you are told about the bug; the bug stays unless the optimization removes it as a side effect (for example, an iterative rewrite that no longer overflows the stack), which is marked `BEHAVIOR-CHANGE`.
-5. **Behavior changes are never silent.** Unprovable changes and any change that alters behavior (even for the better) are documented for developer review and applied only with explicit approval. Approved ones are marked `NEEDS-TESTING` or `BEHAVIOR-CHANGE` in code and in the report.
-6. **Aim for the best possible complexity.** State the lower bound and compare at least three approaches, including combinations.
+5. **Behavior changes are never silent.** Unverified changes and any change that alters behavior (even for the better) are documented for developer review and applied only with explicit approval. Approved ones are marked `NEEDS-TESTING` or `BEHAVIOR-CHANGE` in code and in the report.
+6. **Aim for the best possible complexity.** State the lower bound and compare approaches in proportion to difficulty, without inventing alternatives to fill a quota. Analysis always reports the best achievable approach; applying is driven by evidence.
 7. **Data structures must earn their place.** New dependencies need the developer's permission.
-8. **Measure, do not only reason.** Benchmark before and after; leave cold code with tiny inputs alone.
+8. **Measure, do not only reason.** Benchmark time and memory before and after, label results as measured or estimated, and leave cold code with tiny inputs alone.
 9. **Label the case:** worst, average, or amortized.
 10. **Look beyond CPU loops:** N+1 queries, network calls in loops, main-thread work.
 11. **Keep the public contract:** signatures, return types, threading, and errors.
@@ -175,9 +176,9 @@ Each language file covers built-in data structures and their costs, which struct
 | `SKILL.md` | Mandatory rules, modes, language detection, workflow overview, anti-patterns |
 | `WORKFLOW.md` | Setup, survey, analysis, report, apply, close-out |
 | `ALGORITHM-ARSENAL.md` | Five triage questions, complexity reference, lower bounds, core techniques with their assumptions, production patterns, bit manipulation, combinations |
-| `ADVANCED-TECHNIQUES.md` | Advanced graph, tree, range, DP, search, string, number-theory, and specialized-structure techniques |
-| `DIFFERENTIAL-TESTING.md` | How to prove equivalence: reference copies, what to compare, inputs, benchmarks |
-| `BEHAVIOR-TRAPS.md` | Rewrites that look equivalent but are not |
+| `ADVANCED-TECHNIQUES.md` | Advanced graph, tree, range, DP, search, string, number-theory, memory-locality, parallelism, streaming, and specialized-structure techniques |
+| `DIFFERENTIAL-TESTING.md` | How to verify equivalence: reference copies, what to compare, inputs, reporting evidence, benchmarks, memory measurement |
+| `BEHAVIOR-TRAPS.md` | Rewrites that look equivalent but are not, including numerical, hidden-input, cancellation, and security traps |
 | `REPORTING.md` | Report format, behavior changes for review, bug log, `NEEDS-TESTING` and `BEHAVIOR-CHANGE` markers |
 | `languages/*.md` | Per-language companions |
 

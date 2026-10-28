@@ -19,19 +19,21 @@ Rank items by expected real-world impact. Use this format for each:
 - **Callers and usage:** Who calls it, how often, on which thread, typical and maximum input sizes (state the assumption and its source).
 - **Current complexity:** Time O(...) [worst | average | amortized], space O(...), in terms of named variables.
 - **Lower bound:** O(...) because ...
-- **Candidates considered:**
-  1. <Approach> — time O(...), space O(...), notes.
+- **Difficulty:** Straightforward (strongest candidate reaches the lower bound with the standard library and no behavior risks) | Nontrivial.
+- **Candidates considered:** Straightforward: the strongest candidate and why alternatives are unnecessary. Nontrivial: at least three plausible approaches:
+  1. <Approach> — time O(...) (preprocessing and per-query separately), space O(...), notes.
   2. <Approach> — time O(...), space O(...), notes.
   3. <Approach or combination> — time O(...), space O(...), notes.
 - **Recommended:** <Approach> — time O(...), space O(...). Why it wins. If above the lower bound, why.
 - **Memory bound:** What new memory is used and why it is bounded.
 - **Dependency needed:** None, or the library name, version, license, and why (requires developer permission).
 - **Behavior risks:** Traps from BEHAVIOR-TRAPS.md that apply, and how each will be covered.
-- **Provable with tests:** Yes, or which behavior cannot be proven and why.
+- **Bottleneck evidence:** Profile, trace, query plan, benchmark, developer report, or static estimate only.
 - **Assumptions:** Each assumption the technique needs and the evidence from the code that it holds.
 - **Behavior changes:** None, or the exact behavior before and after (rule 5).
-- **Status:** Proposed | Applied (proven) | Applied (NEEDS-TESTING, developer approved) | Applied (BEHAVIOR-CHANGE, developer approved) | Awaiting developer review | Skipped (reason) | Not worth changing (n is small and the path is cold).
-- **Benchmark:** Before and after at realistic n and at larger n, once applied.
+- **Verification:** Inputs and properties covered (edge cases, number of generated cases, seeds, sizes), tests and tools actually run with results, and behavior left unverified. Never "proven".
+- **Status:** Proposed | Applied (verified by tests) | Applied (NEEDS-TESTING, developer approved) | Applied (BEHAVIOR-CHANGE, developer approved) | Awaiting developer review | Skipped (reason) | Not worth changing (n is small and the path is cold).
+- **Performance:** Measured: time and memory before and after at realistic n, larger n, and worst-case inputs where relevant, with environment, run count, median, and variance, as absolute values and percentage change. Estimated: the theoretical gain, labeled as estimated. If measurement could not be completed, say why; the item is not a confirmed win.
 ```
 
 Also list candidates that were considered and dropped, with the reason, so the developer sees what was checked.
@@ -80,11 +82,11 @@ If the developer declines, keep the original behavior and use the best equivalen
 
 ## NEEDS-TESTING marker
 
-Rule 5: when the developer approves a change whose equivalence tests cannot fully prove, mark it in the code directly above the changed code, using the language's comment syntax:
+Rule 5: when the developer approves a change whose equivalence tests cannot fully verify, mark it in the code directly above the changed code, using the language's comment syntax:
 
 ```
 // NEEDS-TESTING (complexity-optimizer): <what changed>.
-// Unverified: <the exact behavior tests could not prove>.
+// Unverified: <the exact behavior tests could not verify>.
 // Approved by the developer on <YYYY-MM-DD>. See OPTIMIZATION-REPORT.md item <ID>.
 ```
 
@@ -94,11 +96,12 @@ Also list every marked change in a "Needs testing" section at the top of `OPTIMI
 
 End every run with a short summary in the conversation:
 
-- Items applied and proven equivalent.
+- Items applied and verified by tests, with a one-line summary of the evidence for each.
 - Items applied with developer approval but marked `NEEDS-TESTING`.
 - Items applied with developer approval that knowingly change behavior (`BEHAVIOR-CHANGE`).
 - Behavior changes still awaiting developer review.
 - Items proposed but not applied.
 - Bugs found (count and IDs).
 - Dependency requests pending.
-- Test suite status before and after.
+- Test suite status before and after, from runs on the final code.
+- Which performance numbers are measured and which are estimated, and any verification that could not be completed.

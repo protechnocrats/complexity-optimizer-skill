@@ -3,7 +3,9 @@
 Load this file in Phase 3 alongside `ALGORITHM-ARSENAL.md` when:
 
 - the core techniques do not reach the lower bound, or
-- the problem is about graphs, trees, dynamic programming, combinatorial search, strings, number theory, numerical computation, or specialized data structures.
+- the problem is about graphs, trees, dynamic programming, combinatorial search, strings, number theory, numerical computation, memory locality, parallelism and vectorization, streaming and external memory, or specialized data structures.
+
+Read the tables the same way as in `ALGORITHM-ARSENAL.md`: build or preprocessing cost is stated separately from per-query cost, output cost counts, bounds are worst case unless labeled, and "in practice" marks workload-dependent speedups.
 
 These techniques apply to any codebase: compilers, databases, search engines, scientific and financial code, games, infrastructure tooling, backends, and apps. Every rule still applies. In particular:
 
@@ -51,11 +53,11 @@ These techniques apply to any codebase: compilers, databases, search engines, sc
 
 | Signal | Technique | Valid when | Typical result |
 |---|---|---|---|
-| DP transition takes the min/max over a sliding range of previous states | Monotonic deque | The range of candidate states slides monotonically | O(n·k) → O(n) |
+| DP transition takes the min/max over a sliding range of previous states | Monotonic deque | The range of candidate states slides monotonically | O(n·k) → O(n) amortized total |
 | Transition minimizes a linear function of earlier states (dp[j] + a[i]·b[j]) | Convex hull trick or Li Chao tree | The transition has that exact linear form | O(n²) → O(n log n), or O(n) with monotonic slopes and queries |
 | Optimal split point moves monotonically as i grows | Divide-and-conquer optimization | Monotonicity of the optimal split point is proven | O(k·n²) → O(k·n log n) |
 | Interval DP where cost satisfies the quadrangle inequality | Knuth optimization | Quadrangle inequality and monotonicity hold | O(n³) → O(n²) |
-| Optimal segmentation or partitioning | Interval DP, partition DP, prefix DP | — | Exhaustive partition enumeration → polynomial |
+| Optimal segmentation or partitioning | Interval DP, partition DP, prefix DP | — | Exhaustive partition enumeration → O(states × transitions per state), often O(n²) or O(n³) |
 | Counts or properties of every number in a huge range, digit by digit | Digit DP | Property decomposes over digits | O(range) → O(digits · states) |
 | Aggregating over all subsets of each mask | Sum over subsets (SOS) DP | — | O(3^n) → O(n·2^n) |
 
@@ -73,7 +75,7 @@ These techniques apply to any codebase: compilers, databases, search engines, sc
 
 | Signal | Technique | Valid when | Typical result |
 |---|---|---|---|
-| Many substring or repeated-pattern queries on a static text | Suffix array + LCP array | Text does not change | Per-query scans → O(m log n) per query; O(n log n) build (O(n) with SA-IS) |
+| Many substring or repeated-pattern queries on a static text | Suffix array + LCP array | Text does not change; enough queries to amortize the build | Build: O(n log n), or O(n) with SA-IS; O(n) memory. Query: O(m log n) for a pattern of length m, plus O(k) to report k occurrences, instead of O(n·m) per scan |
 | Distinct substrings, longest repeated or common substring | Suffix automaton | — | O(n²) or worse → O(n) build |
 | Longest palindromic substring, all palindromes | Manacher's algorithm | — | O(n²) → O(n) |
 | Border and period detection | Prefix function (KMP failure function) | — | O(n²) → O(n) |
@@ -90,8 +92,50 @@ These techniques apply to any codebase: compilers, databases, search engines, sc
 | Combinations, factorial ratios modulo a prime | Precomputed factorials and inverse factorials | The modulus is prime and larger than n | O(n) per query → O(1) after O(n) setup |
 | Large powers, modular exponentiation | Binary exponentiation | — | O(n) → O(log n) multiplications |
 | Linear recurrences for large n | Matrix exponentiation | Recurrence of fixed order k | O(n·k) → O(k³ log n) |
-| Polynomial multiplication, convolution, counting pair sums | FFT or NTT | Floating-point FFT can change results through rounding (behavior change); NTT is exact modulo a suitable prime | O(n²) → O(n log n) |
+| Polynomial multiplication, convolution, counting pair sums | FFT or NTT | Floating-point FFT rounds, so results can differ (behavior change) unless values are small enough to round back exactly, with a stated error bound. NTT computes the result **modulo a prime**: it equals the exact integer result only when the prime exceeds every possible output coefficient, or when several primes are combined with the Chinese remainder theorem | O(n²) → O(n log n) |
 | XOR constraints, parity systems, maximum subset XOR | XOR basis; Gaussian elimination over GF(2) | — | Exponential subset search → O(n · bits), or O(n³/w) with bitsets |
+
+## Memory locality
+
+Select these only when profiling, cache-miss counters, or benchmarks show memory access is the bottleneck. Asymptotic complexity does not change; constant factors can change by several times.
+
+| Signal | Technique | Valid when | Typical result |
+|---|---|---|---|
+| Hot loops read one field from many objects (pointer chasing, scattered allocations) | Data-oriented layout: structure of arrays (SoA) instead of array of structures (AoS); flat primitive arrays | Callers do not depend on object identity or the object API, or an adapter keeps it | Fewer cache misses; vectorization becomes possible |
+| Linked structures traversed in hot paths | Contiguous arrays, index-based links, arena or pool allocation | — | Sequential access instead of pointer chasing |
+| Nested loops over large 2D data (matrix multiply, image filters, grid passes) | Loop interchange to match memory order; loop tiling/blocking | Reordering does not change results (floating-point summation order is a behavior change) | Working set fits in cache |
+| Threads updating counters or fields that share a cache line | Padding or per-thread accumulators combined at the end (avoid false sharing) | Combining preserves the original result | Removes cache-line contention |
+| Many short-lived allocations in hot code | Allocation reduction: reuse buffers, preallocate, pooling | Reused objects are never retained by callers or other threads | Less GC and allocator time |
+| Throughput limited by bytes moved, not computation | Compact representations (smaller integer types, bit packing, compression of cold data) | Value ranges are proven to fit | Less memory bandwidth |
+
+## Parallelism and vectorization
+
+Parallelism reduces wall-clock time, not total work, and adds overhead. Use it only after the sequential algorithm is optimal.
+
+- **Amdahl's law.** If a fraction p of the work can run in parallel on N cores, the best possible speedup is 1 / ((1 − p) + p / N). Estimate p from a profile before proposing parallelism.
+- **Overhead.** Task scheduling, thread creation, synchronization, and data transfer cost time. Small inputs often get slower. Benchmark at realistic sizes and find the size below which sequential execution wins.
+- **Load imbalance.** Uneven chunks leave cores idle; use work stealing or smaller chunks.
+- **Determinism.** Parallel floating-point reductions change summation order and therefore results. Order of side effects, logging, and errors changes. All of these are behavior changes that need developer review.
+- **Changing threading is a contract change** (rule 11).
+
+| Signal | Technique | Valid when | Typical result |
+|---|---|---|---|
+| Independent per-element work over large arrays | SIMD/vectorized operations: compiler auto-vectorization, platform vector APIs, vectorized libraries | Simple loops without data-dependent branches; results identical (beware floating-point reassociation) | Several times faster per core |
+| Large independent tasks or data partitions | Task or data parallelism with a bounded thread pool | Tasks are truly independent; shared state is synchronized or eliminated | Up to the Amdahl limit |
+| Associative reductions over large data | Parallel reduction with per-thread partial results | The operation is associative; for floating point, results differ (behavior change) unless a deterministic reduction order is used | Up to the Amdahl limit |
+| Pipelines of independent stages | Pipelining with bounded queues | Stage order and backpressure preserve semantics | Overlaps I/O and compute |
+
+## Streaming and external memory
+
+For data larger than memory, or when memory must stay within a fixed budget. State the memory budget explicitly and distinguish exact algorithms from approximate ones (approximate results are always behavior changes).
+
+| Signal | Technique | Valid when | Typical result |
+|---|---|---|---|
+| Sorting data larger than memory | External merge sort: sort chunks that fit, then k-way merge | Stable variant when the original sort was stable | Works within the memory budget; O(n log n) with sequential I/O |
+| Aggregation (group by, counts, sums) over huge inputs | Streaming aggregation with bounded state; hash partitioning with spill to disk when keys exceed memory | Exact aggregation; output order matches the original | Memory bounded by the budget instead of input size |
+| Joining two large datasets | Sort-merge join or partitioned hash join with spilling | Join semantics (nulls, duplicates, ordering) match the original | Fits the memory budget |
+| Uniform random sample from a stream of unknown length | Reservoir sampling | Randomness: results differ from any other sampling method; behavior change unless it replaces an equivalent random sample with the same seed semantics | O(k) memory for a sample of k |
+| Top-k or heavy hitters over a stream | Bounded heap (exact top-k); Misra-Gries or Space-Saving (approximate) | Approximate methods are behavior changes | O(k) memory |
 
 ## Specialized data structures
 
@@ -100,7 +144,7 @@ These techniques apply to any codebase: compilers, databases, search engines, sc
 | Predecessor and successor queries over a bounded integer universe u, at very high volume | Van Emde Boas tree, or a hierarchical bitset (y-fast trie for sparse sets) | Integer keys in [0, u); memory O(u) for van Emde Boas, less for hierarchical bitsets | O(log n) → O(log log u) |
 | Sorted map needed but not in the standard library | Treap, skip list, or another balanced tree | — | O(n) → O(log n) expected |
 | Overlap queries over many intervals | Interval tree, or a segment tree over compressed coordinates | — | O(n) per query → O(log n + k) |
-| Nearest-neighbor or range search in low dimensions | k-d tree | Low dimensionality (roughly under 10); data mostly static | O(n) per query → O(log n) average |
+| Nearest-neighbor or range search in low dimensions | k-d tree | Low dimensionality (roughly under 10); data mostly static | Build: O(n log n). Query: O(log n) average for well-distributed data, degrading toward O(n) for skewed data or higher dimensions; workload-dependent |
 | Cheap pre-check before an expensive exact lookup | Bloom filter | Used **only as a pre-filter** before the exact check, so false positives never change results | Avoids most expensive lookups |
 | Approximate counts, frequencies, or distinct counts over huge streams | Count-min sketch, HyperLogLog | Approximate results are acceptable. **Always a behavior change**: developer review | O(n) memory → O(1) or O(log n) memory, with fast updates |
 

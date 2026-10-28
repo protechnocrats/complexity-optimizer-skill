@@ -1,6 +1,6 @@
 # Algorithm Arsenal
 
-Use this file in Phase 3 to enumerate candidate approaches. It holds the core techniques. Load [ADVANCED-TECHNIQUES.md](ADVANCED-TECHNIQUES.md) as well when the techniques here do not reach the lower bound, or when the problem is about graphs, trees, dynamic programming, combinatorial search, strings, number theory, or specialized data structures.
+Use this file in Phase 3 to enumerate candidate approaches. It holds the core techniques. Load [ADVANCED-TECHNIQUES.md](ADVANCED-TECHNIQUES.md) as well when the techniques here do not reach the lower bound, or when the problem is about graphs, trees, dynamic programming, combinatorial search, strings, number theory, memory locality, parallelism and vectorization, streaming and external memory, or specialized data structures.
 
 Do not stop at the first technique that improves the bound. Check every section whose signals match, then check the combinations.
 
@@ -38,7 +38,7 @@ For each candidate, write down:
 1. The abstract problem statement.
 2. The lower bound and its reason.
 3. Every matching signal from the tables below and in `ADVANCED-TECHNIQUES.md`.
-4. At least three candidate approaches, including at least one combination when the problem has more than one dimension.
+4. Candidate approaches in proportion to difficulty (rule 6). If the strongest candidate reaches the lower bound with the standard library and no behavior risks, name it and briefly explain why alternatives are unnecessary. Otherwise, at least three plausible approaches, including at least one combination when the problem has more than one dimension. Never invent alternatives to meet a quota.
 5. For each approach: the assumptions it needs and the evidence from the code that they hold.
 6. Whether the approach changes any observable behavior (see "Behavior-changing techniques" below).
 7. The chosen approach, and why the others lost.
@@ -50,7 +50,7 @@ A lower bound tells you when to stop. Common ones:
 - **Must read the input:** if the answer can depend on every element, Ω(n). No sublinear algorithm exists without preprocessing or extra structure (sortedness, an index).
 - **Comparison sorting:** Ω(n log n). Beat it only with non-comparison sorts (counting, radix, bucket) when keys are bounded integers or fixed-width.
 - **Search in unsorted data:** Ω(n) per query. Repeated queries change the picture: build an index once in O(n), then answer each in O(1) expected.
-- **Sorted data search:** Ω(log n) comparison-based; O(1) expected with a hash index.
+- **Search in sorted data:** comparison-based lookup takes Θ(log n). For repeated exact-key queries, a hash index gives O(1) expected lookup after O(n) expected preprocessing and O(n) extra space. It does not pay off for a one-off query, it must preserve the original equality semantics, and its worst-case lookup is slower.
 - **Output size:** if the result has k elements, Ω(k). Listing all pairs is Ω(n²) when there can be n² pairs.
 - **Repeated calls:** when a function is called m times on the same or slowly changing data, the real cost is total work across all calls. Preprocessing once plus cheap queries can beat any per-call algorithm.
 
@@ -69,6 +69,13 @@ Many large wins come from changing the problem rather than speeding up the loop:
 - **Push work to the right layer.** A filter, join, or aggregate in the database query instead of in a loop over rows.
 
 ## Signals and techniques
+
+How to read the tables in this file and in `ADVANCED-TECHNIQUES.md`:
+
+- **Costs are bounds, not promises.** "Typical result" shows the change in asymptotic cost when the "Valid when" conditions hold.
+- **Preprocessing is separate from queries.** When a technique builds a structure, its build time and memory are stated separately from per-query cost. Count both against the real call pattern.
+- **Output cost counts.** A query that returns k results costs at least O(k) on top of the search.
+- **Labels matter.** Bounds are worst case unless marked expected, amortized, or average. Phrases such as "in practice" mark workload-dependent speedups, not guaranteed complexity improvements.
 
 ### Lookup, membership, counting
 
@@ -89,15 +96,15 @@ Many large wins come from changing the problem rather than speeding up the loop:
 
 | Signal | Technique | Valid when | Typical result |
 |---|---|---|---|
-| Linear scan of sorted data | Binary search | Sorted by the same comparator the search uses; random access available | O(n) → O(log n) |
-| First index or smallest value that satisfies a condition | Binary search on a monotonic predicate | The predicate is monotonic over the search range (false…false, true…true) | O(range · check) → O(log range · check) |
+| Linear scan of sorted data | Binary search | Sorted by the same comparator the search uses, and the comparator is consistent; random access available; which match is returned among duplicates, and the not-found result, match the original | O(n) → O(log n) |
+| First index or smallest value that satisfies a condition | Binary search on a monotonic predicate | The predicate is monotonic over the search range (false…false, true…true); the comparator is consistent; boundary behavior (empty range, no match, all match, duplicates) matches the original | O(range · check) → O(log range · check) |
 | Pair or triple search over sorted data | Two pointers | Sorted; moving a pointer provably excludes the skipped candidates | O(n²) → O(n) after sorting |
 | Aggregate over every fixed-size window | Running aggregate updated as the window slides | The aggregate is invertible (sum, count, XOR) | O(n·k) → O(n) |
-| Minimum or maximum of every fixed-size window | Monotonic deque | — | O(n·k) → O(n) |
+| Minimum or maximum of every fixed-size window (not invertible, so a running aggregate cannot remove elements) | Monotonic deque | — | O(n·k) → O(n) amortized total: each element enters and leaves the deque at most once |
 | Longest or shortest contiguous run meeting a condition | Variable sliding window | The condition is monotonic as the window grows or shrinks (for example, sums of non-negative values, or "at most k distinct"). **Negative values usually break it.** | O(n²) → O(n) |
 | Subarrays with an exact target sum, values of any sign | Prefix sum + hash map of prefix counts | Exact-equality condition | O(n²) → O(n) expected |
 | Sum constraints with negative values (shortest subarray with sum ≥ k, and similar) | Prefix sums + monotonic deque, or prefix sums + sorted structure | Depends on the exact condition; prove the deque invariant | O(n²) → O(n) or O(n log n) |
-| Next greater or smaller element, spans, histogram areas | Monotonic stack | — | O(n²) → O(n) total |
+| Next greater or smaller element, spans, histogram areas | Monotonic stack | — | O(n²) → O(n) amortized total: each element is pushed and popped at most once |
 | Overlapping intervals, merging ranges | Sort by start, then sweep | — | O(n²) → O(n log n) |
 | Events over time (concurrent sessions, resource counts) | Sweep line over sorted endpoints | Tie order of start and end events matches the original semantics | O(n²) → O(n log n) |
 | Sorting bounded integers | Counting sort or radix sort | Keys are bounded integers or fixed-width; use the stable variant when equal keys carry other data | O(n log n) → O(n + k) |
@@ -121,8 +128,8 @@ Many large wins come from changing the problem rather than speeding up the loop:
 
 | Signal | Technique | Valid when | Typical result |
 |---|---|---|---|
-| "Are these connected / in the same group?" with merges | Union-find with path compression and union by rank or size | Merges only (no splits) | Near O(1) amortized per operation |
-| Prefix matching, autocomplete, word lookup | Trie | — | O(total words · length) → O(length) per query |
+| "Are these connected / in the same group?" with merges | Union-find with path compression and union by rank or size | Merges only (no splits) | O(α(n)) amortized per operation (α is the inverse Ackermann function, at most 4 for any practical n) |
+| Prefix matching, autocomplete, word lookup | Trie | The set of words is built once or changes rarely; key representation and matching semantics (case, normalization) are preserved | Build: O(L) for L total characters. Lookup: O(m) for a query of length m, instead of scanning every word; plus O(k) output cost when returning k matches |
 | Range sums or counts with point updates | Fenwick (binary indexed) tree | The operation is invertible (sum, count, XOR) | Query O(n) → O(log n); point update O(1) → O(log n) |
 | Range queries with point updates, any associative operation (min, max, gcd) | Segment tree | The operation is associative | Query O(n) → O(log n); point update O(1) → O(log n) |
 | Range updates and range queries together | Segment tree with lazy propagation | Updates compose with each other and with the aggregate | O(n) per operation → O(log n) worst case per operation |
@@ -148,13 +155,13 @@ Many large wins come from changing the problem rather than speeding up the loop:
 
 | Signal | Technique | Valid when | Typical result |
 |---|---|---|---|
-| Recursion that recomputes the same arguments | Memoization | The function is pure; subproblems actually repeat (if they rarely recur, a cache only costs memory); the cache is bounded | Exponential → polynomial |
-| Optimal-choice problems over sequences, grids, subsets | Dynamic programming | Optimal substructure and overlapping subproblems | Exponential → polynomial |
+| Recursion that recomputes the same arguments | Memoization | The function is pure (see "Hidden inputs" in `BEHAVIOR-TRAPS.md`); subproblems actually repeat (if they rarely recur, a cache only costs memory); the cache is bounded; its scope (per call, per object, or process-wide) is stated, along with how it is invalidated | Exponential → O(distinct states × work per state) |
+| Optimal-choice problems over sequences, grids, subsets | Dynamic programming | Optimal substructure and overlapping subproblems | Exponential → O(states × transitions per state) |
 | DP where each state depends only on the previous row or a few previous states | Rolling arrays / state compression | — | **Memory only**: O(n·m) space → O(m). Time is unchanged |
 | Deep recursion over overlapping subproblems | Bottom-up DP | Converting recursion to iteration removes stack overflows on large inputs: a bug removed as a side effect, applied and documented under rule 4 | Same time; no call-stack depth |
 | Locally optimal choice is provably globally optimal | Greedy, with an exchange argument written down | The proof holds for every input the code accepts | Polynomial → O(n log n) or O(n) |
 | Subset or capacity problems with small integer targets | Knapsack DP indexed by achievable sum | Integer weights and a target T small enough for a table | O(2^n) → O(n·T) (pseudo-polynomial) |
-| Counting the number of ways, not enumerating them | DP with counting | A numeric type or modulus that cannot overflow differently from the original | Enumeration → polynomial |
+| Counting the number of ways, not enumerating them | DP with counting | A numeric type or modulus that cannot overflow differently from the original | Enumeration → O(states × transitions per state) |
 | Enumerating solutions with many dead ends | Backtracking with pruning, constraint propagation, branch and bound | Pruning rules never discard a valid solution; result order matches if observable | Large practical speedups; worst case stays exponential |
 | Loops that compute sums of series, counts, arithmetic progressions | Closed-form formula | The formula cannot overflow or round differently from the loop | O(n) → O(1) |
 | Repeated exponentiation, linear recurrences | Binary exponentiation; matrix exponentiation | The operation is associative | O(n) → O(log n) |
@@ -183,7 +190,7 @@ In real systems, removing repeated work, allocation, and I/O often matters more 
 | Large collection copied only to read or iterate | View, iterator, span, or reference | The source is not mutated while the view is alive | Aliasing |
 | Only the first match or a yes/no answer is needed | Early exit, short-circuit evaluation, lazy iteration | Skipped iterations have no side effects | **Behavior change** if skipped iterations had effects or could throw |
 | Many tiny objects or linked structures | Contiguous arrays, flat maps, packed representations | Callers do not rely on object identity | Identity |
-| Expensive result that depends on a small set of inputs | Memoization or caching with explicit bounds and invalidation | The function is pure | Staleness if not pure |
+| Expensive result that depends on a small set of inputs | Memoization or caching with explicit bounds, scope, and invalidation | The function is pure, including hidden inputs (time, locale, configuration, user or tenant context) | Staleness if not pure; data leaking across users if the cache key omits user, tenant, or permission context |
 | Database rows fetched one at a time (N+1) | Batch loading, joins, eager loading, DataLoader-style batching | — | Result order, transaction boundaries, partial failure |
 | Whole dataset loaded when a subset is used | Projection, filtering at the source, streaming, pagination | Every caller uses only the subset | **Behavior change** if callers receive different objects or pages: developer review |
 | Independent network or I/O operations run sequentially | Batching or bounded concurrency | Operations are truly independent | **Behavior change**: ordering, error handling, rate limits; developer review |
@@ -191,6 +198,19 @@ In real systems, removing repeated work, allocation, and I/O often matters more 
 | Full recomputation after a small change | Incremental computation, dependency tracking | Every dependency is tracked | Staleness if a dependency is missed |
 | Heavy work on a UI thread, event loop, or request thread | Move work elsewhere; precompute; cache derived values | Threading is part of the contract (rule 11) | **Behavior change**: developer review |
 | Optimization based on intuition alone | Profiling, benchmarking, allocation tracing | — | Finds actual bottlenecks before adding complexity (rule 8) |
+
+### Database queries
+
+Inspect the actual query plan (`EXPLAIN`, `EXPLAIN ANALYZE`, or the database's equivalent) on representative data before recommending any index or query change. Never guess from the SQL text alone.
+
+| Signal | Technique | Valid when | Behavior risk |
+|---|---|---|---|
+| Full table scans for selective filters or joins | Index on the filtered or joined columns; composite index ordered to match equality columns first, then range or sort columns | The query plan shows the scan, and the filter is selective | Schema change: slower writes, more storage, locking during creation. Developer approval required |
+| Predicates that prevent index use (functions or casts on indexed columns, leading wildcards, implicit type conversions) | Rewrite the predicate so the index applies, or index the expression | The rewritten predicate is exactly equivalent, including nulls, collation, and time zones | Subtle result changes if not exactly equivalent |
+| `ORDER BY` or `DISTINCT` that the caller does not need | Remove it only if no caller depends on order or uniqueness | Every caller checked | **Behavior change** if any caller depends on it |
+| Deep `OFFSET` pagination | Keyset (seek) pagination on an indexed, unique ordering | — | **Behavior change**: page boundaries under concurrent writes and the API shape; developer review |
+| `SELECT *` or loading whole entities for a few fields | Projection of only the needed columns | Every caller uses only those fields | **Behavior change** if callers receive a different type |
+| Counting rows only to check existence | `EXISTS` or `LIMIT 1` | — | Low |
 
 ## Behavior-changing techniques
 
@@ -245,7 +265,7 @@ The best solution often connects two techniques. Check these whenever a problem 
 | Prefix sums + binary search | Weighted random choice, "first index where the cumulative total exceeds x" | O(n) per query → O(log n) |
 | Hash map + doubly linked list | O(1) ordered cache with eviction | Bounded memory and O(1) operations |
 | Sweep line + heap | Meeting rooms, skyline, interval scheduling with resources | O(n²) → O(n log n) |
-| Coordinate compression + Fenwick tree | Counting inversions, rank queries over large value ranges | O(n²) → O(n log n) |
+| Coordinate compression + Fenwick tree | Counting inversions, rank queries over large value ranges (compression preserves order and equality among known values, not distances between them) | O(n²) → O(n log n) |
 | Coordinate compression + segment tree | Changing rank and range queries over large values | Avoids structures indexed by raw values |
 | Sweep line + coordinate compression + Fenwick tree | Counting overlaps, inversions, or active values | O(n²) → O(n log n) |
 
