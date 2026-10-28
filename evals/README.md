@@ -82,7 +82,7 @@ cd evals/fixtures/rust-shop && cargo test
 ## Getting meaningful results
 
 - **Run each fixture three times.** Agents vary between runs; one run proves little.
-- **Compare with and without the skill.** Cases that pass either way show where the skill adds nothing. Cases that fail even with the skill show where its wording needs work.
+- **Compare with and without the skill.** Cases that pass either way show where the skill adds nothing. Cases that fail even with the skill show where its wording needs work. Record the difference in the "Skill lift" table of `SCORECARD.md`.
 - **Compare agents.** The skill is meant to be agent-neutral. A case that passes in one agent but fails in another usually points to an ambiguous rule.
 - **Fix the skill, not the fixture.** When a case fails, change the skill's wording, then rerun. Change a fixture only if the case itself is wrong.
 

@@ -18,13 +18,14 @@ Rank items by expected real-world impact. Use this format for each:
 - **What it does:** One or two sentences in plain language.
 - **Callers and usage:** Who calls it, how often, on which thread, typical and maximum input sizes (state the assumption and its source).
 - **Current complexity:** Time O(...) [worst | average | amortized], space O(...), in terms of named variables. Include the cost of the functions it calls and, when callers invoke it in a loop, the total cost along the call chain.
-- **Lower bound:** O(...) because ...
-- **Difficulty:** Straightforward (strongest candidate reaches the lower bound with the standard library and no behavior risks) | Nontrivial.
+- **Lower bound:** O(...) because ... Basis: proven (for example, must read every input) | conditional (holds only under a stated assumption, such as comparison-based sorting) | conjectured (no faster algorithm is known, such as 3SUM) | workload-dependent (follows from the measured or stated call pattern).
+- **Difficulty:** Straightforward (strongest candidate reaches the lower bound, needs no new dependency, and has no behavior risks) | Nontrivial.
 - **Candidates considered:** Straightforward: the strongest candidate and why alternatives are unnecessary. Nontrivial: at least three plausible approaches:
   1. <Approach> — time O(...) (preprocessing and per-query separately), space O(...), notes.
   2. <Approach> — time O(...), space O(...), notes.
   3. <Approach or combination> — time O(...), space O(...), notes.
 - **Recommended:** <Approach> — time O(...), space O(...). Why it wins. If above the lower bound, why.
+- **Kind of win:** One or more of: Asymptotic (the growth rate changes, for example O(n²) → O(n log n)) | Constant-factor (same bound; fewer allocations, cache misses, branch misses, or instructions) | Work avoided (caching, batching, early exit, incremental updates). Never present a constant-factor or work-avoided win as a complexity reduction.
 - **Memory bound:** What new memory is used and why it is bounded.
 - **Dependency needed:** None, or the library name, version, license, and why (requires developer permission).
 - **Behavior risks:** Traps from BEHAVIOR-TRAPS.md that apply, and how each will be covered.

@@ -49,6 +49,10 @@ Use both hand-written edge cases and generated inputs.
 - Bias the generator toward collisions: small value ranges produce duplicates and ties, which is where rewrites most often break.
 - If the project already has a property-based testing library, use it and its shrinking. Do not add one without asking. A hand-written seeded generator is enough and needs no dependency.
 
+### Exhaustive inputs (when the domain is small)
+
+When every input in a small domain can be enumerated in reasonable time, test all of them instead of sampling: for example, every array of length 0 to 6 over the values 0 to 3, every 8-bit or 16-bit input to a bit-manipulation or encoding routine, or every 32-bit input to a fast pure function. Keep the generated inputs as well, for sizes beyond the exhaustive domain. Report the exact domain covered: an exhaustive pass shows equivalence on that domain only, not on larger inputs.
+
 ## When equivalence counts as verified
 
 Treat an optimization as verified by tests only when all of these hold:

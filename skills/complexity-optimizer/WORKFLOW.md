@@ -8,7 +8,7 @@ Follow these phases in order. Report mode stops after Phase 4.
 2. Identify the test framework, how tests are run, and whether a property-based testing library is already a dependency. Do not add one without asking.
 3. Identify available benchmark tooling. If none exists, plan a simple in-test timing harness (see `DIFFERENTIAL-TESTING.md`) rather than adding a dependency.
 4. Check version control state. In apply mode, recommend a dedicated branch and confirm the working tree is clean, or that the developer accepts mixing changes.
-5. Run the existing test suite. Record pass/fail counts. If anything fails before you change code, report the failures and stop until the developer decides how to proceed.
+5. Run the existing test suite. Record pass/fail counts. If anything fails before you change code, report the failures and stop until the developer decides how to proceed. If there is no suite, or it cannot run here, follow rule 12.
 
 ## Phase 2: Survey
 
@@ -26,7 +26,7 @@ For each candidate, establish before analyzing it:
 4. **Cost along the call chain.** Multiply the function's cost by how many times its callers invoke it per operation: loops in callers, per-item callbacks, per-frame or per-request calls. A function that is optimal for a single call can be the inner loop of a cubic computation. When it is, analyze the caller as the candidate; the fix often belongs there (for example, build an index once, then look up) rather than in the function, which may stay unchanged.
 5. **Hot or cold.** Main thread, per-frame, per-request, per-item, startup, or rare background work.
 
-Drop candidates where `n` is provably tiny and the path is cold, but list them in the report as "not worth changing" so the developer sees they were considered.
+Drop candidates where `n` is provably tiny and the path is cold (rule 8 defines both), but list them in the report as "not worth changing" so the developer sees they were considered.
 
 ## Phase 3: Analyze
 
@@ -59,7 +59,7 @@ For each approved item, one at a time:
 4. **Benchmark.** Measure time and memory for the original and the new version at realistic `n`, at a larger `n`, and on worst-case inputs where relevant, following `DIFFERENTIAL-TESTING.md`. Record the numbers as measured. If the new version is not faster at realistic sizes, do not keep it unless the developer agrees for scaling reasons. If benchmarking cannot be run, say so and report the expected gain as estimated only.
 5. **Handle unverified parts and behavior changes.** If any behavior cannot be verified, or the change alters behavior in any way, stop and ask the developer (rule 5). If they approve, add the `NEEDS-TESTING` or `BEHAVIOR-CHANGE` marker from `REPORTING.md`.
 6. **Re-run after the final edit.** If anything changed after the last test run (review fixes, comments, formatting), run the differential tests and the full suite again. Results from an earlier version of the code do not count.
-7. **Commit.** One optimization per commit, with a message that states the before and after complexity, the benchmark result, and the tests added. Do not mix bug fixes, formatting, or unrelated refactors into the commit.
+7. **Commit.** Unless the developer has said not to commit, make one commit per optimization, with a message that states the before and after complexity, the benchmark result, and the tests added. Do not mix bug fixes, formatting, or unrelated refactors into the commit.
 
 If a differential test fails, the optimization is wrong. Fix the optimization, never the test. If the failure reveals that the original behavior is itself a bug, record it in the bug log and follow rule 4: if the best optimization removes the bug as a side effect, confirm that outputs differ only on the bug-triggering inputs and document it; otherwise keep matching the original.
 

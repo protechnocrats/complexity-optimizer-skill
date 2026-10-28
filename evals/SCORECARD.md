@@ -52,6 +52,17 @@ Use the case IDs from the answer key (for example K1, T1, S1, C1, R1). Leave unu
 | Partials | | | |
 | Fails | | | |
 
+## Skill lift
+
+Fill this in on the with-skill scorecard once a baseline scorecard exists for the same fixture, agent, and model. Pass rate is passes divided by runs, counting a partial as half a pass. Lift is the with-skill pass rate minus the baseline pass rate.
+
+| Case | With skill (pass rate) | Baseline (pass rate) | Lift |
+|---|---|---|---|
+| All cases | | | |
+| | | | |
+
+A case that passes either way shows a rule the agent already follows without the skill. A case that fails either way shows a rule whose wording needs work. A negative lift shows a rule that misleads the agent.
+
 ## Follow-ups
 
 Cases that fail consistently point to skill wording that needs to change. Note the case, what the agent did, and which file and rule should be clarified.

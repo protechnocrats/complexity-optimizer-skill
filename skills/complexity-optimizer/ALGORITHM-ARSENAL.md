@@ -1,6 +1,6 @@
 # Algorithm Arsenal
 
-Use this file in Phase 3 to enumerate candidate approaches. It holds the core techniques. Load [ADVANCED-TECHNIQUES.md](ADVANCED-TECHNIQUES.md) as well when the techniques here do not reach the lower bound, or when the problem is about graphs, trees, dynamic programming, combinatorial search, strings, number theory, memory locality, parallelism and vectorization, streaming and external memory, or specialized data structures.
+Use this file in Phase 3 to enumerate candidate approaches. It holds the core techniques. Load [ADVANCED-TECHNIQUES.md](ADVANCED-TECHNIQUES.md) as well when the techniques here do not reach the lower bound, or when the problem is about graphs (static or changing), trees, dynamic programming, combinatorial search, strings, number theory, numerical computation, memory locality, parallelism and vectorization, lock contention, streaming and external memory, hash table design, storage and indexing, spatial data, caching and eviction, or specialized data structures.
 
 Do not stop at the first technique that improves the bound. Check every section whose signals match, then check the combinations.
 
@@ -43,7 +43,9 @@ Find the row for the candidate's current cost, measured along the call chain (se
 | O(n²) | Nested loops over related collections; a linear search or front removal inside a loop | "Lookup, membership, counting", "Order and search", "Structures for repeated queries", "Combinations" |
 | A product of size variables (O(n·m), O(V·E)) | For each A, scan all B | "Invert the loop" under "Reformulate before choosing": index one side once. Name every variable; the right fix depends on which one is large |
 | O(n log n) | A sort, or n heap or tree operations | Whether the order is observable at all; top-k, min, or max without a full sort ("Priority and selection"); non-comparison sorts for bounded keys |
-| O(n) per call, called many times | Recomputing from scratch on every call | "Precompute once, query many times" and "Incremental maintenance" under "Reformulate before choosing"; "Structures for repeated queries" |
+| O(n) per call, called many times | Recomputing from scratch on every call | "Precompute once, query many times" and "Incremental maintenance" under "Reformulate before choosing"; "Structures for repeated queries"; "Changing graphs" in `ADVANCED-TECHNIQUES.md` when a graph result is rebuilt after each change |
+| O(n²) over objects in space | Checking every pair of objects for distance, overlap, or collision | "Spatial data" in `ADVANCED-TECHNIQUES.md` |
+| Cost dominated by page or disk I/O, cache misses, branch misses, or cache hit rate rather than operation count | Data layout, storage structure, or eviction policy, not the algorithm | "Storage and indexing", "Memory locality", and "Caching and eviction" in `ADVANCED-TECHNIQUES.md` |
 
 ## Required enumeration
 
@@ -52,7 +54,7 @@ For each candidate, write down:
 1. The abstract problem statement.
 2. The lower bound and its reason.
 3. Every matching signal from the tables below and in `ADVANCED-TECHNIQUES.md`.
-4. Candidate approaches in proportion to difficulty (rule 6). If the strongest candidate reaches the lower bound with the standard library and no behavior risks, name it and briefly explain why alternatives are unnecessary. Otherwise, at least three plausible approaches, including at least one combination when the problem has more than one dimension. Never invent alternatives to meet a quota.
+4. Candidate approaches in proportion to difficulty (rule 6). If the strongest candidate reaches the lower bound, needs no new dependency (the standard library, or a structure the project already has), and has no behavior risks, name it and briefly explain why alternatives are unnecessary. Otherwise, at least three plausible approaches, including at least one combination when the problem has more than one dimension. Never invent alternatives to meet a quota.
 5. For each approach: the assumptions it needs and the evidence from the code that they hold.
 6. Whether the approach changes any observable behavior (see "Behavior-changing techniques" below).
 7. The chosen approach, and why the others lost.
