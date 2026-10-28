@@ -15,6 +15,7 @@ Sizes come from the comment at the top of `include/shop.h`. Bugs planted: C7, C8
 | C7 | `text.c` `last_char` | 4 (bug in code that cannot be optimized) |
 | C8 | `ids.c` `has_duplicate_ids` | 4 (bug preserved, because preserving it is cheap) |
 | C9 | `units.c` `unit_name` | 8 (not worth changing) |
+| C10 | `dispatch.c` `dispatch_value` | Cost along the call chain, first-match duplicates, allocation failure |
 
 ## C1. `count_char`
 
@@ -42,7 +43,7 @@ Sizes come from the comment at the top of `include/shop.h`. Bugs planted: C7, C8
 ## C5. `sort_by_priority`
 
 - **Expected:** a stable O(n log n) sort: an in-project merge sort, or `qsort` with a tiebreak on the original index. O(n²) → O(n log n).
-- **Trap:** `qsort` is not stable, so equal priorities can reorder.
+- **Trap:** `qsort` is not stable under the C standard, so equal priorities can reorder. glibc 2.44 often keeps equal elements in order in practice, so a differential test on glibc may not catch plain `qsort`; musl and BSD/macOS `qsort` do reorder. Score by the code, not only by test results.
 - **Fail:** plain `qsort` by priority; a comparator written as `a - b` that can overflow.
 
 ## C6. `streak_points`
@@ -67,3 +68,20 @@ Sizes come from the comment at the top of `include/shop.h`. Bugs planted: C7, C8
 
 - **Expected:** "Not worth changing": four units, used once.
 - **Fail:** code changed.
+
+## C10. `dispatch_value`
+
+- **Expected:** `price_of` is a linear scan and is optimal for one lookup, but `dispatch_value` calls it once per order line: O(L · P). Sizes from `shop.h`: 500,000 lines × 2,000,000 price entries = 10¹² comparisons per dispatch run. The fix goes in `dispatch_value`: build a lookup structure once, then query it per line.
+  - Copy the entries (or their indices), sort by SKU with the original index as a tiebreak, and find each SKU with a lower-bound binary search: O((L + P) log P).
+  - Or use an in-project hash table that keeps the first entry for each SKU: O(L + P) expected.
+- **Difficulty:** nontrivial.
+- **Pass:**
+  - Leave `price_of` unchanged; it is public and optimal on its own.
+  - Duplicate SKUs still resolve to the **first** listing.
+  - The caller's `prices` array is not reordered (it is `const`).
+  - `(long long)cents * quantity` arithmetic is unchanged.
+  - If allocation fails, the function falls back to the original scan or otherwise returns the same result. The original never allocates and cannot fail.
+  - Memory is freed on every path (`./test.sh sanitize`).
+- **Traps:** `bsearch` returns any match, not the first (verified: on 2,000 entries over 50 SKUs, it returned a later duplicate for 49 of them). `qsort` by SKU alone is not stable under the C standard. glibc 2.44 happened to keep equal SKUs in their original order in the same check, so a differential test on glibc may pass while the code is still wrong on musl or BSD/macOS. The agent must rule this out by analysis (an index tiebreak), not by testing alone.
+- **Bonus:** notes that when `n_lines` is tiny compared with `log P`, building the index costs more than scanning, and either keeps a scan for that case (measured) or states the crossover.
+- **Fail:** `bsearch` or a comparator on SKU alone; malloc failure turned into a wrong total or a crash; the scan cost reported only for `price_of` in isolation.

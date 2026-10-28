@@ -6,7 +6,8 @@
 /* Typical production volumes, from the operations runbook:
  * product descriptions up to 200,000 characters; up to 20,000 tags per export;
  * up to 1,000,000 IDs per import; price lists up to 2,000,000 entries;
- * up to 100,000 orders per dispatch run; streaks up to 4,000,000,000 days. */
+ * up to 100,000 orders per dispatch run, with up to 500,000 order lines;
+ * streaks up to 4,000,000,000 days. */
 
 size_t count_char(const char *text, char c);
 
@@ -37,6 +38,23 @@ char last_char(const char *text);
 
 /* Returns 1 if any ID appears more than once in ids, otherwise 0. */
 int has_duplicate_ids(const int *ids, size_t n);
+
+struct price {
+    int sku;
+    long cents;
+};
+
+/* Returns the price of sku from the first entry that lists it, or -1 when it is not listed. */
+long price_of(const struct price *prices, size_t n, int sku);
+
+struct line {
+    int sku;
+    int quantity;
+};
+
+/* Value of all order lines in a dispatch run at list prices. Lines with unlisted SKUs count as 0. */
+long long dispatch_value(const struct line *lines, size_t n_lines,
+                         const struct price *prices, size_t n_prices);
 
 /* Long name for a unit code. Used once when the product editor opens. */
 const char *unit_name(const char *code);

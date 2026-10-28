@@ -10,10 +10,10 @@ These evals check whether an agent using the skill makes the right call on code 
 evals/
 ├── fixtures/
 │   ├── kotlin-shop/   ← 14 cases (Kotlin/JVM, Gradle, JUnit 4)
-│   ├── ts-shop/       ← 11 cases (TypeScript, Node's built-in test runner, no dependencies)
+│   ├── ts-shop/       ← 12 cases (TypeScript, Node's built-in test runner, no dependencies)
 │   ├── swift-shop/    ← 10 cases (Swift Package Manager, XCTest); not yet verified on a toolchain
-│   ├── c-shop/        ← 9 cases (C11, plain asserts, optional sanitizers)
-│   └── rust-shop/     ← 10 cases (Cargo, no dependencies)
+│   ├── c-shop/        ← 10 cases (C11, plain asserts, optional sanitizers)
+│   └── rust-shop/     ← 12 cases (Cargo, no dependencies)
 ├── answers/           ← answer keys; never let the agent see these
 ├── SCORECARD.md       ← copy per session and fill in
 └── new-run.sh         ← creates a fresh run directory outside the repo
@@ -91,4 +91,5 @@ cd evals/fixtures/rust-shop && cargo test
 1. Add the code to a fixture, written as ordinary project code. Do not hint at the answer in names or comments.
 2. Keep the fixture's existing tests green. Planted bugs must not be caught by the existing tests.
 3. Verify that the trap actually triggers (for example, that the recursion really overflows, or that the alternative really changes output).
+   If the trap depends on the platform or library version (for example, `qsort` stability or stack depth), record where you verified it in the answer key.
 4. Add the case to the answer key with the expected outcome, pass criteria, and failure signals.

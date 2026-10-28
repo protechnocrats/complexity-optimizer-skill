@@ -66,6 +66,16 @@ static void test_unit_name(void)
     assert(strcmp(unit_name("oz"), "oz") == 0);
 }
 
+static void test_dispatch_value(void)
+{
+    struct price prices[] = {{10, 250}, {20, 100}, {30, 75}};
+    struct line lines[] = {{20, 3}, {99, 4}, {10, 1}};
+    assert(price_of(prices, 3, 30) == 75);
+    assert(price_of(prices, 3, 31) == -1);
+    assert(dispatch_value(lines, 3, prices, 3) == 550);
+    assert(dispatch_value(lines, 0, prices, 3) == 0);
+}
+
 int main(void)
 {
     test_count_char();
@@ -76,6 +86,7 @@ int main(void)
     test_streak_points();
     test_has_duplicate_ids();
     test_unit_name();
+    test_dispatch_value();
     puts("all tests passed");
     return 0;
 }

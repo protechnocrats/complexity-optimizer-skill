@@ -14,4 +14,7 @@ export const VOLUMES = {
   storesPerRestockRun: 300,
   catalogSkus: 8_000,
   movementsPerStore: 25_000,
+  invoicesPerMonth: 150_000,
+  linesPerInvoice: 12,
+  priceBookEntries: 250_000,
 };

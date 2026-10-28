@@ -13,6 +13,8 @@ import { currencyLabels } from "../src/currency.ts";
 import { packsNeeded } from "../src/packing.ts";
 import { stockOnHand } from "../src/inventory.ts";
 import { restockList } from "../src/restock.ts";
+import { PriceBook } from "../src/pricebook.ts";
+import { monthlyStatements } from "../src/invoices.ts";
 
 test("shortest hops", () => {
   const graph = new Map([["a", ["b", "c"]], ["b", ["d"]], ["c", ["d"]], ["d", []]]);
@@ -88,4 +90,16 @@ test("restock list", () => {
     { storeId: "s2", sku: "a", onHand: 2 },
     { storeId: "s2", sku: "b", onHand: 0 },
   ]);
+});
+
+test("monthly statements", () => {
+  const prices = new PriceBook();
+  prices.add({ sku: "a", cents: 250 });
+  prices.add({ sku: "b", cents: 100 });
+  const invoices = [
+    { customerId: "c2", lines: [{ sku: "a", quantity: 2 }] },
+    { customerId: "c1", lines: [{ sku: "b", quantity: 1 }, { sku: "zz", quantity: 5 }] },
+    { customerId: "c2", lines: [{ sku: "b", quantity: 3 }] },
+  ];
+  assert.deepEqual([...monthlyStatements(invoices, prices)], [["c2", 800], ["c1", 100]]);
 });

@@ -11,3 +11,6 @@ pub const ORDERS_PER_REGION_REPORT: usize = 500_000;
 pub const REGIONS: usize = 3_000;
 /// Supplier feeds can nest categories deeply.
 pub const MAX_CATEGORY_DEPTH_SEEN: usize = 200_000;
+/// Delivery zones are mapped as square grids of this many cells per side.
+pub const DELIVERY_GRID_SIDE: usize = 400;
+pub const SKUS_PER_BUNDLE_SEED: usize = 3_000;

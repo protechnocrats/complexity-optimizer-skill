@@ -16,6 +16,8 @@ Sizes come from `src/jobs.rs`. Bugs planted: R8, R9 (and a second, separate over
 | R8 | `pricing.rs` `percent_of` | 4 (bug in code that cannot be optimized) |
 | R9 | `catalog.rs` `all_category_names` | 4 (bug removed as a side effect; separate bug left as is) |
 | R10 | `units.rs` `unit_labels` | 8 (not worth changing) |
+| R11 | `routes.rs` `delivery_routes` | Exponential starting point, 6 (straightforward), space check |
+| R12 | `bundles.rs` `candidate_pairs` | Already at the output-size lower bound |
 
 ## R1. `blocked_users`
 
@@ -75,3 +77,17 @@ Sizes come from `src/jobs.rs`. Bugs planted: R8, R9 (and a second, separate over
 
 - **Expected:** "Not worth changing": four units, used once.
 - **Fail:** code changed.
+
+## R11. `delivery_routes`
+
+- **Expected:** the recursion explores every monotone path, which is exponential: O(C(r + c, r)) worst case for an open r × c grid (about 4× more work per extra row and column; measured 2 ms → 12 ms → 48 ms at sides 11, 12, 13). A DP over cells gives O(r · c), which is the lower bound, since every cell may matter. Side 400 from `jobs.rs`: 160,000 cells, under a millisecond. After time is settled, the space check keeps one row: O(c) memory.
+- **Difficulty:** straightforward. The strongest candidate reaches the lower bound with the standard library and no behavior risks; memoized recursion is also acceptable.
+- **Pass:** starts from the exponential cost; results stay modulo 1,000,000,007 (summing two values below the modulus cannot overflow `u64`, as in the original); a blocked start or finish returns 0; an empty grid returns 0; differential tests on random small grids with blocked cells.
+- **Bonus:** notes that the original indexes `grid[0]` for the row length and would panic on some ragged grids; the contract says the grid is rectangular, so no change is needed, but a DP must not silently accept a ragged grid where the original panicked without listing it.
+- **Fail:** reported as quadratic or not reported; the modulus dropped or applied differently.
+
+## R12. `candidate_pairs`
+
+- **Expected:** "already optimal". The function returns all n(n − 1)/2 pairs, so the output alone is Θ(n²) and the nested loop is at the lower bound. Sizes: 3,000 SKUs gives about 4.5 million pairs nightly.
+- **Pass:** the nested loop is recognized as matching the output-size lower bound and the code is not changed for complexity. `Vec::with_capacity(n * (n - 1) / 2)` is an acceptable constant-factor change only with a measured benchmark, and the capacity arithmetic must not overflow for `n` the original handled.
+- **Fail:** claims a sub-quadratic algorithm; deduplicates SKUs or changes the pair order; a constant-factor change presented as a complexity win, or reported without measurement.

@@ -1,10 +1,12 @@
 use std::collections::HashMap;
 
+use rust_shop::bundles::candidate_pairs;
 use rust_shop::catalog::{all_category_names, Category};
 use rust_shop::dedupe::unique_skus;
 use rust_shop::ledger::streak_points;
 use rust_shop::moderation::{blocked_users, User};
 use rust_shop::pricing::percent_of;
+use rust_shop::routes::delivery_routes;
 use rust_shop::routing::shortest_hops;
 use rust_shop::search::first_position;
 use rust_shop::text::char_positions;
@@ -77,4 +79,18 @@ fn category_names_parent_first() {
 #[test]
 fn units() {
     assert_eq!(unit_labels(&["kg", "oz"]), vec!["kilograms (kg)", "oz"]);
+}
+
+#[test]
+fn delivery_routes_avoid_blocked_cells() {
+    let open = vec![vec![false; 3]; 3];
+    assert_eq!(delivery_routes(&open), 6);
+    let mut blocked = open.clone();
+    blocked[1][1] = true;
+    assert_eq!(delivery_routes(&blocked), 2);
+}
+
+#[test]
+fn candidate_pairs_in_scoring_order() {
+    assert_eq!(candidate_pairs(&[7, 3, 9]), vec![(7, 3), (7, 9), (3, 9)]);
 }
