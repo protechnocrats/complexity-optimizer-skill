@@ -5,7 +5,7 @@
 For a small result (one or two items), present the report in the conversation. Otherwise ask the developer where to write it, suggesting `optimization-report/` at the project root, and ask whether it should be ignored by version control. The report has two files:
 
 - `OPTIMIZATION-REPORT.md` — the ranked items, applied changes, benchmarks, and needs-testing list.
-- `BUGS-FOUND.md` — every bug noticed. None are fixed on purpose; any removed as an unavoidable side effect of an optimization are marked as such.
+- `BUGS-FOUND.md` — every bug noticed. None are fixed on purpose; any removed as a side effect of an optimization are marked as such.
 
 ## Optimization item format
 
@@ -38,7 +38,7 @@ Also list candidates that were considered and dropped, with the reason, so the d
 
 ## Bug log format
 
-Rule 4: document every bug. Never fix one on purpose. Bugs removed as an unavoidable side effect of an optimization are recorded here too.
+Rule 4: document every bug and tell the developer. Never fix one on purpose. Bugs in code that is not optimized stay as they are; bugs in optimized code stay unless the optimization removes them as a side effect.
 
 ```markdown
 ### BUG-<N>. <Short title>
@@ -47,7 +47,7 @@ Rule 4: document every bug. Never fix one on purpose. Bugs removed as an unavoid
 - **What happens:** The incorrect behavior, with a concrete input and output.
 - **Expected:** What appears to be intended, and why you think so.
 - **Impact:** Who or what is affected.
-- **Status after optimization:** Preserved (the optimized code reproduces this behavior exactly) | Not touched by any optimization | Fixed as an unavoidable side effect of item <ID> (see "Behavior changes for review").
+- **Status:** Left as is (code not optimized: already optimal, or equivalence could not be guaranteed) | Preserved in optimized code (item <ID>) | Fixed as a side effect of item <ID> (marked `BEHAVIOR-CHANGE`).
 - **Suggested fix:** Optional, described only. Not applied (unless fixed as a side effect).
 ```
 

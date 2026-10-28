@@ -40,7 +40,7 @@ For each remaining candidate, record:
 7. **Behavior risks.** Walk `BEHAVIOR-TRAPS.md` and list every trap the change could hit.
 8. **Provability.** Whether differential tests can cover all observable behavior, or which part cannot be proven (concurrency, real database ordering, timing, platform rendering).
 9. **Known behavior changes.** Any observable behavior the approach changes, even for the better. These go in the report's "Behavior changes for review" section and are never applied without explicit approval (rule 5).
-10. **Bugs noticed.** Anything that looks wrong in the original. Record it for the bug log; do not fix it. Note whether the chosen approach would remove it as an unavoidable side effect (rule 4).
+10. **Bugs noticed.** Anything that looks wrong in the original. Record it for the bug log; do not fix it. Note whether the code will be optimized (rule 4): if not, it stays exactly as is; if so, note whether the chosen approach keeps the bug or removes it as a side effect.
 
 ## Phase 4: Report
 
@@ -59,7 +59,7 @@ For each approved item, one at a time:
 5. **Handle unprovable parts and behavior changes.** If any behavior cannot be proven, or the change alters behavior in any way, stop and ask the developer (rule 5). If they approve, add the `NEEDS-TESTING` or `BEHAVIOR-CHANGE` marker from `REPORTING.md`.
 6. **Commit.** One optimization per commit, with a message that states the before and after complexity, the benchmark result, and the tests added. Do not mix bug fixes, formatting, or unrelated refactors into the commit.
 
-If a differential test fails, the optimization is wrong. Fix the optimization, never the test. If the failure reveals that the original behavior is itself a bug, record it in the bug log and keep matching the original, unless the chosen optimization removes the bug as an unavoidable side effect. In that case follow the exception in rule 4: confirm that outputs differ only on the bug-triggering inputs, and document it.
+If a differential test fails, the optimization is wrong. Fix the optimization, never the test. If the failure reveals that the original behavior is itself a bug, record it in the bug log and follow rule 4: if the best optimization removes the bug as a side effect, confirm that outputs differ only on the bug-triggering inputs and document it; otherwise keep matching the original.
 
 ## Phase 6: Close out
 

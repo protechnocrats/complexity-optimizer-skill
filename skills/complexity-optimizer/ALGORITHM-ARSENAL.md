@@ -202,7 +202,7 @@ Some techniques in this file and in `ADVANCED-TECHNIQUES.md` necessarily change 
 
 This includes changes that look like improvements: a function that fails faster, returns results in a "more sensible" order, or no longer throws an exception callers may rely on. Those are behavior changes, and the developer decides.
 
-The one exception is a bug removed as an unavoidable side effect of the best optimization (rule 4), such as an iterative rewrite that no longer overflows the stack. It is applied without waiting, but it is still documented in the bug log, marked `BEHAVIOR-CHANGE` in the code, and listed for developer review.
+The one exception is a bug removed as a side effect of the best optimization (rule 4), such as an iterative rewrite that no longer overflows the stack. The optimization is applied without waiting, and the bug is documented in the bug log, marked `BEHAVIOR-CHANGE` in the code, and reported to the developer.
 
 ## Bit manipulation
 
