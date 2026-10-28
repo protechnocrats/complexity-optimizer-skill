@@ -5,7 +5,7 @@ Copy this file for each evaluation session. Score each case **P** (pass), **F** 
 - **Date:**
 - **Agent and model:**
 - **Skill version (commit):**
-- **Fixture:** kotlin-shop | ts-shop
+- **Fixture:** kotlin-shop | ts-shop | swift-shop | c-shop | rust-shop
 - **Skill installed:** yes | no (baseline)
 
 ## Workflow checks
@@ -27,18 +27,20 @@ Copy this file for each evaluation session. Score each case **P** (pass), **F** 
 
 | Case | Run 1 | Run 2 | Run 3 | Notes |
 |---|---|---|---|---|
-| K1 / T1 | | | | |
-| K2 / T2 | | | | |
-| K3 / T3 | | | | |
-| K4 / T4 | | | | |
-| K5 / T5 | | | | |
-| K6 / T6 | | | | |
-| K7 / T7 | | | | |
-| K8 / T8 | | | | |
-| K9 / T9 | | | | |
-| K10 | | | | |
-| K11 | | | | |
-| K12 | | | | |
+| 1 | | | | |
+| 2 | | | | |
+| 3 | | | | |
+| 4 | | | | |
+| 5 | | | | |
+| 6 | | | | |
+| 7 | | | | |
+| 8 | | | | |
+| 9 | | | | |
+| 10 | | | | |
+| 11 | | | | |
+| 12 | | | | |
+
+Use the case IDs from the answer key (for example K1, T1, S1, C1, R1). Leave unused rows empty.
 
 ## Totals
 

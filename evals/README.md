@@ -10,7 +10,10 @@ These evals check whether an agent using the skill makes the right call on code 
 evals/
 ├── fixtures/
 │   ├── kotlin-shop/   ← 12 cases (Kotlin/JVM, Gradle, JUnit 4)
-│   └── ts-shop/       ← 9 cases (TypeScript, Node's built-in test runner, no dependencies)
+│   ├── ts-shop/       ← 9 cases (TypeScript, Node's built-in test runner, no dependencies)
+│   ├── swift-shop/    ← 10 cases (Swift Package Manager, XCTest); not yet verified on a toolchain
+│   ├── c-shop/        ← 9 cases (C11, plain asserts, optional sanitizers)
+│   └── rust-shop/     ← 10 cases (Cargo, no dependencies)
 ├── answers/           ← answer keys; never let the agent see these
 ├── SCORECARD.md       ← copy per session and fill in
 └── new-run.sh         ← creates a fresh run directory outside the repo
@@ -20,12 +23,18 @@ evals/
 
 - **kotlin-shop:** a full JDK 17 or newer (with `javac`) and network access for the first Gradle build. If your default Java has no compiler, point `JAVA_HOME` at a full JDK, for example the one bundled with Android Studio (`<android-studio>/jbr`).
 - **ts-shop:** Node.js 23.6 or newer, which runs TypeScript files directly.
+- **swift-shop:** Swift 5.9 or newer (Xcode on macOS, or a Swift toolchain on Linux). This fixture has not been run yet; see the status note in `answers/swift-shop.md`.
+- **c-shop:** a C11 compiler (`cc`, `gcc`, or `clang`; set `CC` to choose). `./test.sh sanitize` builds with AddressSanitizer and UBSan where supported.
+- **rust-shop:** Rust 1.80 or newer with Cargo.
 
 Check that the fixture is green before you start:
 
 ```bash
 cd evals/fixtures/kotlin-shop && ./gradlew test
 cd evals/fixtures/ts-shop && npm test
+cd evals/fixtures/swift-shop && swift test
+cd evals/fixtures/c-shop && ./test.sh && ./test.sh sanitize
+cd evals/fixtures/rust-shop && cargo test
 ```
 
 ## Running one evaluation
@@ -65,7 +74,7 @@ cd evals/fixtures/ts-shop && npm test
    ```bash
    git log --oneline                 # one commit per optimization
    git diff HEAD~N -- src            # what changed
-   ./gradlew test   # or: npm test  # still green on the final code
+   ./gradlew test   # or npm test, swift test, ./test.sh, cargo test: still green on the final code
    ```
 
 5. **Score** the run in a copy of `SCORECARD.md` using `answers/<fixture>.md`.
