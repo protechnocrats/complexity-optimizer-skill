@@ -82,7 +82,7 @@ If the request is ambiguous, the agent asks before editing. Approving one item n
 
 1. **Setup:** detects languages and versions, finds your test and benchmark tooling, and runs your existing test suite. If tests already fail, it stops and tells you.
 2. **Survey:** finds candidate hotspots and learns what each one does, who calls it, how often, and with what input sizes.
-3. **Analyze:** states the theoretical lower bound and compares at least three approaches, including combinations of techniques (for example, hash map plus prefix sum, or sort plus two pointers).
+3. **Analyze:** states the theoretical lower bound, compares at least three approaches (including combinations such as hash map plus prefix sum, or sort plus two pointers), and checks each technique's assumptions against the code.
 4. **Report:** ranks items by real-world impact.
 5. **Apply** (only on approval): writes differential tests against the original first, makes the change, runs all tests, benchmarks before and after, and commits each optimization separately.
 6. **Close out:** summarizes what was applied, what is marked as needing testing, bugs found, and pending dependency requests.
@@ -96,6 +96,7 @@ If the request is ambiguous, the agent asks before editing. Approving one item n
 - **Have a working test suite.** The agent runs it before and after every change. Projects with no tests still work, because the agent writes differential tests, but your own tests catch more.
 - **Answer dependency requests deliberately.** When the best data structure is not in your language's standard library, the agent asks before adding a library and explains what it buys. You can decline; it then uses the best option without the dependency.
 - **Follow up on `NEEDS-TESTING` markers.** If a change could not be fully proven equivalent and you approved it anyway, the agent marks it in the code and in the report with exactly what to verify. Search for `NEEDS-TESTING` before releasing.
+- **Review behavior changes.** If an optimization would change behavior in any way, even for the better, the agent lists it under "Behavior changes for review" with the before and after behavior and waits for your decision. Approved ones are marked `BEHAVIOR-CHANGE` in the code.
 - **Read the bug log.** Bugs the agent notices are documented in `BUGS-FOUND.md` but never fixed as part of an optimization. Fix them separately.
 
 ## Example prompts
@@ -139,7 +140,7 @@ For small results, the report is shown in the conversation instead of written to
 2. **Time first, then space.** Space is optimized only after time is optimal, and never at the expense of time.
 3. **Understand first, then prove behavior is unchanged** with differential tests that compare return values, input mutation, exceptions, side effects, and ordering.
 4. **Bugs are reported, never fixed** under an optimization. The optimized code reproduces the original behavior exactly.
-5. **Unprovable changes need the developer's decision**, and accepted ones are marked `NEEDS-TESTING` in code and in the report.
+5. **Behavior changes are never silent.** Unprovable changes and any change that alters behavior (even for the better) are documented for developer review and applied only with explicit approval. Approved ones are marked `NEEDS-TESTING` or `BEHAVIOR-CHANGE` in code and in the report.
 6. **Aim for the best possible complexity.** State the lower bound and compare at least three approaches, including combinations.
 7. **Data structures must earn their place.** New dependencies need the developer's permission.
 8. **Measure, do not only reason.** Benchmark before and after; leave cold code with tiny inputs alone.
@@ -173,10 +174,11 @@ Each language file covers built-in data structures and their costs, which struct
 |---|---|
 | `SKILL.md` | Mandatory rules, modes, language detection, workflow overview, anti-patterns |
 | `WORKFLOW.md` | Setup, survey, analysis, report, apply, close-out |
-| `ALGORITHM-ARSENAL.md` | Complexity reference, lower bounds, signals → techniques, bit manipulation, combinations |
+| `ALGORITHM-ARSENAL.md` | Five triage questions, complexity reference, lower bounds, core techniques with their assumptions, production patterns, bit manipulation, combinations |
+| `ADVANCED-TECHNIQUES.md` | Advanced graph, tree, range, DP, search, string, number-theory, and specialized-structure techniques |
 | `DIFFERENTIAL-TESTING.md` | How to prove equivalence: reference copies, what to compare, inputs, benchmarks |
 | `BEHAVIOR-TRAPS.md` | Rewrites that look equivalent but are not |
-| `REPORTING.md` | Report format, bug log, `NEEDS-TESTING` marker |
+| `REPORTING.md` | Report format, behavior changes for review, bug log, `NEEDS-TESTING` and `BEHAVIOR-CHANGE` markers |
 | `languages/*.md` | Per-language companions |
 
 ## Contributing

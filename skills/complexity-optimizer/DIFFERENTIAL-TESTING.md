@@ -54,7 +54,7 @@ Treat an optimization as proven equivalent only when all of these hold:
 3. The existing test suite passes.
 4. Every trap in `BEHAVIOR-TRAPS.md` that could apply is either covered by a test or ruled out by analysis you can state in one sentence.
 
-If any part cannot be tested (thread interleavings, real database ordering, platform rendering, timing, hardware), it is not proven. Follow rule 5: ask the developer, and if they accept, add the `NEEDS-TESTING` marker from `REPORTING.md`.
+If any part cannot be tested (thread interleavings, real database ordering, platform rendering, timing, hardware), it is not proven. Follow rule 5: ask the developer, and if they accept, add the `NEEDS-TESTING` marker from `REPORTING.md`. If a differential test shows that the outputs differ and the difference is intended, it is a behavior change, not a test to relax: document it for review and use the `BEHAVIOR-CHANGE` marker only after approval.
 
 ## Benchmarks
 

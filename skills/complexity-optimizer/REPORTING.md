@@ -28,7 +28,9 @@ Rank items by expected real-world impact. Use this format for each:
 - **Dependency needed:** None, or the library name, version, license, and why (requires developer permission).
 - **Behavior risks:** Traps from BEHAVIOR-TRAPS.md that apply, and how each will be covered.
 - **Provable with tests:** Yes, or which behavior cannot be proven and why.
-- **Status:** Proposed | Applied (proven) | Applied (NEEDS-TESTING, developer approved) | Skipped (reason) | Not worth changing (n is small and the path is cold).
+- **Assumptions:** Each assumption the technique needs and the evidence from the code that it holds.
+- **Behavior changes:** None, or the exact behavior before and after (rule 5).
+- **Status:** Proposed | Applied (proven) | Applied (NEEDS-TESTING, developer approved) | Applied (BEHAVIOR-CHANGE, developer approved) | Awaiting developer review | Skipped (reason) | Not worth changing (n is small and the path is cold).
 - **Benchmark:** Before and after at realistic n and at larger n, once applied.
 ```
 
@@ -51,6 +53,31 @@ Rule 4: document bugs, never fix them as part of an optimization.
 
 Tell the developer about each bug in the conversation as well as in the file.
 
+## Behavior changes for review
+
+Rule 5: every optimization that would change observable behavior, including changes that look like improvements, is listed at the top of `OPTIMIZATION-REPORT.md` under "Behavior changes for review" before anything is applied:
+
+```markdown
+### <ID>. <Short title>
+
+- **Location:** `path/to/File.kt:123`
+- **Behavior before:** What callers observe today, with a concrete input and output.
+- **Behavior after:** What callers would observe, with the same input.
+- **Who could notice:** Callers, users, stored data, or integrations affected.
+- **Why it is needed:** What the optimization gains, and the best equivalent alternative if one exists.
+- **Decision:** Awaiting developer review | Approved on <YYYY-MM-DD> | Declined.
+```
+
+If the developer approves, mark the code directly above the change:
+
+```
+// BEHAVIOR-CHANGE (complexity-optimizer): <what changed>.
+// Before: <old behavior>. After: <new behavior>.
+// Approved by the developer on <YYYY-MM-DD>. See OPTIMIZATION-REPORT.md item <ID>.
+```
+
+If the developer declines, keep the original behavior and use the best equivalent approach instead.
+
 ## NEEDS-TESTING marker
 
 Rule 5: when the developer approves a change whose equivalence tests cannot fully prove, mark it in the code directly above the changed code, using the language's comment syntax:
@@ -69,6 +96,8 @@ End every run with a short summary in the conversation:
 
 - Items applied and proven equivalent.
 - Items applied with developer approval but marked `NEEDS-TESTING`.
+- Items applied with developer approval that knowingly change behavior (`BEHAVIOR-CHANGE`).
+- Behavior changes still awaiting developer review.
 - Items proposed but not applied.
 - Bugs found (count and IDs).
 - Dependency requests pending.

@@ -15,8 +15,12 @@ These rules apply to every project and every mode. They override convenience, st
 2. **Time first, then space.** Look for space optimizations only after time complexity is optimal. Never reduce space by making time complexity worse, and never make time worse to save memory (for example, replacing an O(1) `HashMap` with an O(log n) array-backed map just to save memory).
 3. **Understand before changing, and prove behavior is unchanged.** Before touching a function, establish what it computes, who calls it, how often, and with what input sizes. Write differential tests that run the original and the optimized version on the same inputs and compare every observable result. Behavior before and after must be identical. See [DIFFERENTIAL-TESTING.md](DIFFERENTIAL-TESTING.md) and [BEHAVIOR-TRAPS.md](BEHAVIOR-TRAPS.md).
 4. **Report bugs, do not fix them.** If you find a bug along the way, document it and tell the developer. Do not fix it as part of an optimization. The optimized code reproduces the original behavior exactly, bug included. A bug fix is a behavior change and belongs in a separate, developer-approved change.
-5. **Unproven equivalence needs a developer decision.** If tests cannot prove that behavior is unchanged, stop and ask the developer. If they accept the change, mark it clearly in the code and in the report as needing testing, stating exactly what is unverified. See [REPORTING.md](REPORTING.md).
-6. **Strive for the best possible complexity.** Do not stop at the first improvement. From O(n²), check whether O(n log n), O(n), O(log n), or O(1) is achievable. Establish the theoretical lower bound for the problem and either reach it or explain why you stopped above it. Enumerate candidate approaches, including combinations of techniques, with [ALGORITHM-ARSENAL.md](ALGORITHM-ARSENAL.md).
+5. **Behavior changes are never silent.** Two cases need the developer's decision before anything is applied:
+   - **Unproven equivalence:** tests cannot prove that behavior is unchanged.
+   - **Known behavior change:** the optimization alters any observable behavior, including changes that look like improvements (no longer overflowing the stack, no longer throwing, failing faster, a different order, approximate instead of exact results).
+
+   Document each one for developer review with the exact behavior before and after, and what is unverified. Apply it only after the developer explicitly approves that item. Then mark it in the code and in the report: `NEEDS-TESTING` for unproven equivalence, `BEHAVIOR-CHANGE` for a known change. See [REPORTING.md](REPORTING.md).
+6. **Strive for the best possible complexity.** Do not stop at the first improvement. From O(n²), check whether O(n log n), O(n), O(log n), or O(1) is achievable. Establish the theoretical lower bound for the problem and either reach it or explain why you stopped above it. Enumerate candidate approaches, including combinations of techniques, with [ALGORITHM-ARSENAL.md](ALGORITHM-ARSENAL.md), and with [ADVANCED-TECHNIQUES.md](ADVANCED-TECHNIQUES.md) when the core techniques do not reach the lower bound or the problem is about graphs, trees, DP, search, strings, number theory, or specialized structures. Confirm every technique's assumptions from the code.
 7. **Data structures must earn their place.** Introduce a data structure only when it reduces time complexity or a measured cost. If the structure is not in the language's standard library and would require a new dependency, explain why and ask the developer for permission before adding it. A small structure written inside the project is not a dependency, but it needs its own tests.
 8. **Measure, do not only reason.** Big-O describes growth, not speed at a given size. Estimate realistic input sizes and call frequency. If `n` is provably tiny and the code is not hot, report the finding but do not change the code. Benchmark before and after any applied change at realistic and larger sizes.
 9. **State which case you mean.** Label every complexity as worst-case, average-case, or amortized. Hash-based structures are O(1) on average but can degrade in the worst case; this matters when users or attackers control keys.
@@ -62,7 +66,7 @@ Follow [WORKFLOW.md](WORKFLOW.md):
 
 1. **Setup** — detect languages, versions, test and benchmark tooling; run the existing test suite.
 2. **Survey** — find candidate hotspots; for each, learn what it does, who calls it, how often, and with what sizes.
-3. **Analyze** — state the problem, current complexity, lower bound, and at least three candidate approaches from [ALGORITHM-ARSENAL.md](ALGORITHM-ARSENAL.md); pick the best.
+3. **Analyze** — state the problem, current complexity, lower bound, and at least three candidate approaches from [ALGORITHM-ARSENAL.md](ALGORITHM-ARSENAL.md) (and [ADVANCED-TECHNIQUES.md](ADVANCED-TECHNIQUES.md) when needed), with each one's assumptions checked; pick the best.
 4. **Report** — write the ranked report defined in [REPORTING.md](REPORTING.md). Report mode ends here.
 5. **Apply** — for each approved item: differential tests on the original first, then the change, then tests, behavior-trap review, and benchmark.
 6. **Close out** — final report with applied changes, benchmark results, bugs found, and anything marked as needing testing.
@@ -79,3 +83,5 @@ Follow [WORKFLOW.md](WORKFLOW.md):
 8. Trading time for memory.
 9. Differential tests that compare only return values while ignoring input mutation, exceptions, side effects, and order.
 10. Rewriting idiomatic code into an unreadable form for a constant-factor gain that was never measured.
+11. Using a technique outside its assumptions (a sliding window over values that can be negative, Dijkstra with negative weights, binary search on a predicate that is not monotonic).
+12. Applying a behavior-changing optimization without documenting it and getting the developer's explicit approval, even when the change looks like an improvement.

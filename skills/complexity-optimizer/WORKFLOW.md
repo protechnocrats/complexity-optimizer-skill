@@ -34,12 +34,13 @@ For each remaining candidate, record:
 1. **Problem statement.** Restate the function as an abstract problem ("count pairs with sum k," "find the latest event per user," "check membership against a fixed list"). Abstract statements match known techniques.
 2. **Current complexity.** Time and space, in every size variable, labeled worst, average, or amortized. Include hidden costs from library calls.
 3. **Lower bound.** The best complexity any correct algorithm could achieve, with the reason. See "Lower bounds" in `ALGORITHM-ARSENAL.md`.
-4. **Candidates.** At least three approaches from `ALGORITHM-ARSENAL.md`, including at least one combination when the problem has more than one dimension (ordering plus lookup, range plus count, and so on). For each: time, space, standard library or dependency, behavior risks.
+4. **Candidates.** At least three approaches from `ALGORITHM-ARSENAL.md` (and `ADVANCED-TECHNIQUES.md` when the core techniques do not reach the lower bound or the problem domain calls for it), including at least one combination when the problem has more than one dimension (ordering plus lookup, range plus count, and so on). For each: time, space, the assumptions it needs and the evidence from the code that they hold, standard library or dependency, behavior risks.
 5. **Choice.** The best approach and why. If it does not reach the lower bound, explain why the gap remains (for example, a better bound needs a dependency the developer has not approved, or needs preprocessing that the call pattern cannot amortize).
 6. **Space check.** Only after time is optimal: can the chosen approach use less memory without changing its time complexity? Confirm every new cache or index is bounded.
 7. **Behavior risks.** Walk `BEHAVIOR-TRAPS.md` and list every trap the change could hit.
 8. **Provability.** Whether differential tests can cover all observable behavior, or which part cannot be proven (concurrency, real database ordering, timing, platform rendering).
-9. **Bugs noticed.** Anything that looks wrong in the original. Record it for the bug log; do not fix it.
+9. **Known behavior changes.** Any observable behavior the approach changes, even for the better. These go in the report's "Behavior changes for review" section and are never applied without explicit approval (rule 5).
+10. **Bugs noticed.** Anything that looks wrong in the original. Record it for the bug log; do not fix it.
 
 ## Phase 4: Report
 
@@ -55,11 +56,11 @@ For each approved item, one at a time:
 2. **Change the code.** Make the smallest change that implements the chosen approach. Keep the signature and contract. Add a short comment where the technique is not obvious.
 3. **Verify.** Run the differential tests, then the full existing suite. Re-walk the behavior traps for this change and confirm each is covered by a test or ruled out by analysis.
 4. **Benchmark.** Measure the original and the new version at realistic `n` and at a larger `n`. Record the numbers. If the new version is not faster at realistic sizes, do not keep it unless the developer agrees for scaling reasons.
-5. **Handle unprovable parts.** If any behavior cannot be proven, stop and ask the developer (rule 5). If they accept, add the `NEEDS-TESTING` marker from `REPORTING.md`.
+5. **Handle unprovable parts and behavior changes.** If any behavior cannot be proven, or the change alters behavior in any way, stop and ask the developer (rule 5). If they approve, add the `NEEDS-TESTING` or `BEHAVIOR-CHANGE` marker from `REPORTING.md`.
 6. **Commit.** One optimization per commit, with a message that states the before and after complexity, the benchmark result, and the tests added. Do not mix bug fixes, formatting, or unrelated refactors into the commit.
 
 If a differential test fails, the optimization is wrong. Fix the optimization, never the test. If the failure reveals that the original behavior is itself a bug, record it in the bug log and keep matching the original.
 
 ## Phase 6: Close out
 
-Update the report with what was applied, skipped, or rejected; final benchmark numbers; the bug log; and the full list of `NEEDS-TESTING` items. State plainly which items were proven equivalent and which were accepted by the developer without full proof.
+Update the report with what was applied, skipped, or rejected; final benchmark numbers; the bug log; and the full lists of `NEEDS-TESTING` and `BEHAVIOR-CHANGE` items. State plainly which items were proven equivalent, which were accepted by the developer without full proof, and which knowingly change behavior.

@@ -1,6 +1,6 @@
 # Behavior Traps
 
-Rewrites that look equivalent but are not. Walk this list for every candidate in Phase 3 and again after applying a change. Each applicable trap must be covered by a differential test or ruled out with a stated reason. Language-specific traps are in the `languages/` files.
+Rewrites that look equivalent but are not. Walk this list for every candidate in Phase 3 and again after applying a change. Each applicable trap must be covered by a differential test or ruled out with a stated reason. A trap that the change actually triggers is a behavior change: document it for developer review and do not apply it without explicit approval (rule 5). Language-specific traps are in the `languages/` files.
 
 ## Ordering
 
