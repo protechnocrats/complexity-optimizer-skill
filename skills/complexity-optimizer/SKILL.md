@@ -14,10 +14,16 @@ These rules apply to every project and every mode. They override convenience, st
 1. **Time is invaluable. Space is cheap, but not infinite.** Extra memory is acceptable when it buys time. Memory must stay bounded and must not cost time through GC pressure, cache misses, or OOM crashes. Every cache, memo table, or index you add has an explicit size bound or a proof that it is bounded by input size the program already holds.
 2. **Time first, then space.** Look for space optimizations only after time complexity is optimal. Never reduce space by making time complexity worse, and never make time worse to save memory (for example, replacing an O(1) `HashMap` with an O(log n) array-backed map just to save memory).
 3. **Understand before changing, and prove behavior is unchanged.** Before touching a function, establish what it computes, who calls it, how often, and with what input sizes. Write differential tests that run the original and the optimized version on the same inputs and compare every observable result. Behavior before and after must be identical. See [DIFFERENTIAL-TESTING.md](DIFFERENTIAL-TESTING.md) and [BEHAVIOR-TRAPS.md](BEHAVIOR-TRAPS.md).
-4. **Report bugs, do not fix them.** If you find a bug along the way, document it and tell the developer. Do not fix it as part of an optimization. The optimized code reproduces the original behavior exactly, bug included. A bug fix is a behavior change and belongs in a separate, developer-approved change.
+4. **Report bugs, never fix them on purpose.** Document every bug you find and tell the developer. Never write code to fix a bug, and never choose or adjust an approach in order to fix one. Fixing bugs is the developer's decision and outside this skill. By default, the optimized code reproduces the original behavior exactly, bug included.
+
+   **One exception: a fix that is an unavoidable side effect.** When the best optimization (rule 6) removes a bug as a side effect, apply it. For example, an iterative rewrite chosen for speed may no longer overflow the stack. Conditions:
+   - The approach was chosen for performance, and no extra code was added to fix the bug.
+   - The old behavior is clearly a bug, not an intended contract. If it is unclear whether callers rely on it (for example, a thrown exception they catch), treat it as a behavior change that needs approval (rule 5).
+   - Differential tests show that outputs differ only on inputs that trigger the bug, and that the new results on those inputs are correct.
+   - It is documented: the bug log records it as fixed as a side effect, the code carries the `BEHAVIOR-CHANGE` marker, and the report lists it under "Behavior changes for review" so the developer can review it.
 5. **Behavior changes are never silent.** Two cases need the developer's decision before anything is applied:
    - **Unproven equivalence:** tests cannot prove that behavior is unchanged.
-   - **Known behavior change:** the optimization alters any observable behavior, including changes that look like improvements (no longer overflowing the stack, no longer throwing, failing faster, a different order, approximate instead of exact results).
+   - **Known behavior change:** the optimization alters any observable behavior other than an unavoidable bug fix under rule 4, including changes that look like improvements (failing faster, a different order, approximate instead of exact results, no longer throwing an exception callers may rely on).
 
    Document each one for developer review with the exact behavior before and after, and what is unverified. Apply it only after the developer explicitly approves that item. Then mark it in the code and in the report: `NEEDS-TESTING` for unproven equivalence, `BEHAVIOR-CHANGE` for a known change. See [REPORTING.md](REPORTING.md).
 6. **Strive for the best possible complexity.** Do not stop at the first improvement. From O(n²), check whether O(n log n), O(n), O(log n), or O(1) is achievable. Establish the theoretical lower bound for the problem and either reach it or explain why you stopped above it. Enumerate candidate approaches, including combinations of techniques, with [ALGORITHM-ARSENAL.md](ALGORITHM-ARSENAL.md), and with [ADVANCED-TECHNIQUES.md](ADVANCED-TECHNIQUES.md) when the core techniques do not reach the lower bound or the problem is about graphs, trees, DP, search, strings, number theory, or specialized structures. Confirm every technique's assumptions from the code.
@@ -77,7 +83,7 @@ Follow [WORKFLOW.md](WORKFLOW.md):
 2. Claiming a complexity without naming the case (worst, average, amortized) or the variable it depends on.
 3. "Optimizing" code where `n` is tiny and the call is cold, then presenting it as a win.
 4. Replacing a structure and silently changing iteration order, sort stability, duplicates, or nullability.
-5. Fixing a bug inside an optimization change.
+5. Fixing a bug on purpose inside an optimization change, or picking an approach because it fixes a bug. Only unavoidable side-effect fixes are allowed (rule 4), and they must be documented.
 6. Memoizing or caching a function that is not pure, or adding a cache with no bound.
 7. Adding a dependency without asking.
 8. Trading time for memory.

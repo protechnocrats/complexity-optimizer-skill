@@ -97,7 +97,7 @@ If the request is ambiguous, the agent asks before editing. Approving one item n
 - **Answer dependency requests deliberately.** When the best data structure is not in your language's standard library, the agent asks before adding a library and explains what it buys. You can decline; it then uses the best option without the dependency.
 - **Follow up on `NEEDS-TESTING` markers.** If a change could not be fully proven equivalent and you approved it anyway, the agent marks it in the code and in the report with exactly what to verify. Search for `NEEDS-TESTING` before releasing.
 - **Review behavior changes.** If an optimization would change behavior in any way, even for the better, the agent lists it under "Behavior changes for review" with the before and after behavior and waits for your decision. Approved ones are marked `BEHAVIOR-CHANGE` in the code.
-- **Read the bug log.** Bugs the agent notices are documented in `BUGS-FOUND.md` but never fixed as part of an optimization. Fix them separately.
+- **Read the bug log.** Bugs the agent notices are documented in `BUGS-FOUND.md` and never fixed on purpose. Fix them separately. A bug removed as an unavoidable side effect of an optimization is marked as such there and listed under "Behavior changes for review".
 
 ## Example prompts
 
@@ -128,7 +128,7 @@ check this module for N+1 database queries
 ## What you get
 
 - **`OPTIMIZATION-REPORT.md`:** for each item, the location, what the code does, who calls it, current complexity, theoretical lower bound, the candidates considered, the recommendation, memory impact, dependency needs, behavior risks, whether it can be proven with tests, and benchmark results once applied.
-- **`BUGS-FOUND.md`:** bugs noticed during analysis, with inputs, impact, and a suggested fix (not applied).
+- **`BUGS-FOUND.md`:** bugs noticed during analysis, with inputs, impact, a suggested fix (not applied), and whether an optimization removed it as a side effect.
 - **Differential tests** in your test sources, with the original implementation kept as a reference. You decide whether to keep them as regression tests.
 - **One commit per applied optimization** with the before and after complexity and benchmark numbers.
 
@@ -139,7 +139,7 @@ For small results, the report is shown in the conversation instead of written to
 1. **Time is invaluable. Space is cheap, but not infinite.** Memory may be spent to save time, but it must stay bounded and must not cost time through GC pressure, cache misses, or OOM crashes.
 2. **Time first, then space.** Space is optimized only after time is optimal, and never at the expense of time.
 3. **Understand first, then prove behavior is unchanged** with differential tests that compare return values, input mutation, exceptions, side effects, and ordering.
-4. **Bugs are reported, never fixed** under an optimization. The optimized code reproduces the original behavior exactly.
+4. **Bugs are reported, never fixed on purpose.** The optimized code reproduces the original behavior. The only exception is a bug that the best optimization removes as an unavoidable side effect (for example, an iterative rewrite that no longer overflows the stack). That is applied, documented in the bug log, and marked for your review.
 5. **Behavior changes are never silent.** Unprovable changes and any change that alters behavior (even for the better) are documented for developer review and applied only with explicit approval. Approved ones are marked `NEEDS-TESTING` or `BEHAVIOR-CHANGE` in code and in the report.
 6. **Aim for the best possible complexity.** State the lower bound and compare at least three approaches, including combinations.
 7. **Data structures must earn their place.** New dependencies need the developer's permission.

@@ -61,7 +61,7 @@ Rewrites that look equivalent but are not. Walk this list for every candidate in
 ## Errors and limits
 
 - **Different exceptions.** A new structure may throw a different exception type, at a different point, or not at all.
-- **Recursion depth.** Turning iteration into recursion (or the reverse) changes stack overflow behavior on large inputs.
+- **Recursion depth.** Turning iteration into recursion (or the reverse) changes stack overflow behavior on large inputs. Removing an overflow on valid input is a bug fixed as a side effect (rule 4); introducing one is a regression and is never acceptable.
 - **Resource limits.** A faster algorithm that uses more memory may hit OOM where the original did not (rule 1: memory must stay bounded).
 
 ## I/O and databases

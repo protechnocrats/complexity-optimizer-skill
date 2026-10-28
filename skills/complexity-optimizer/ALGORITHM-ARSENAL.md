@@ -140,7 +140,7 @@ Many large wins come from changing the problem rather than speeding up the loop:
 | Shortest path, weights 0 or 1 | 0-1 BFS with a deque | Weights are exactly 0 or 1 | O((V + E) log V) → O(V + E) |
 | Dependency order, build order | Topological sort (Kahn or DFS) | Graph is a DAG; detect and report cycles the same way the original did | O(V + E) |
 | Directed cycle or deadlock detection | Three-color DFS, or topological-sort failure | — | O(V + E) |
-| Connected regions in a grid | Flood fill with iterative BFS or DFS | Recursion depth: iterative avoids stack overflow (a behavior change if the original overflowed) | O(V + E) |
+| Connected regions in a grid | Flood fill with iterative BFS or DFS | Recursion depth: iterative code no longer overflows the stack. If the original overflowed on valid input, that is a bug removed as a side effect: apply and document it (rule 4) | O(V + E) |
 | Repeated reachability or recomputation over a static graph | Precompute components, memoize per node | Graph does not change between queries | Per-query traversal → O(1) per query |
 | Minimum spanning tree | Kruskal (sort + union-find) or Prim (heap) | Tie-breaking among equal-weight edges matches the original when the chosen tree is observable | O(E log E) |
 
@@ -151,7 +151,7 @@ Many large wins come from changing the problem rather than speeding up the loop:
 | Recursion that recomputes the same arguments | Memoization | The function is pure; subproblems actually repeat (if they rarely recur, a cache only costs memory); the cache is bounded | Exponential → polynomial |
 | Optimal-choice problems over sequences, grids, subsets | Dynamic programming | Optimal substructure and overlapping subproblems | Exponential → polynomial |
 | DP where each state depends only on the previous row or a few previous states | Rolling arrays / state compression | — | **Memory only**: O(n·m) space → O(m). Time is unchanged |
-| Deep recursion over overlapping subproblems | Bottom-up DP | Converting recursion to iteration removes stack overflows on large inputs, which is a behavior change | Same time; no call-stack depth |
+| Deep recursion over overlapping subproblems | Bottom-up DP | Converting recursion to iteration removes stack overflows on large inputs: a bug removed as a side effect, applied and documented under rule 4 | Same time; no call-stack depth |
 | Locally optimal choice is provably globally optimal | Greedy, with an exchange argument written down | The proof holds for every input the code accepts | Polynomial → O(n log n) or O(n) |
 | Subset or capacity problems with small integer targets | Knapsack DP indexed by achievable sum | Integer weights and a target T small enough for a table | O(2^n) → O(n·T) (pseudo-polynomial) |
 | Counting the number of ways, not enumerating them | DP with counting | A numeric type or modulus that cannot overflow differently from the original | Enumeration → polynomial |
@@ -200,7 +200,9 @@ Some techniques in this file and in `ADVANCED-TECHNIQUES.md` necessarily change 
 - Document it in the report under "Behavior changes for review," with the exact behavior before and after.
 - Apply it only after the developer explicitly approves that item, then add the `BEHAVIOR-CHANGE` marker from `REPORTING.md`.
 
-This includes changes that look like improvements: a function that no longer overflows the stack, no longer throws, fails faster, or returns results in a "more sensible" order. Those are behavior changes, and the developer decides.
+This includes changes that look like improvements: a function that fails faster, returns results in a "more sensible" order, or no longer throws an exception callers may rely on. Those are behavior changes, and the developer decides.
+
+The one exception is a bug removed as an unavoidable side effect of the best optimization (rule 4), such as an iterative rewrite that no longer overflows the stack. It is applied without waiting, but it is still documented in the bug log, marked `BEHAVIOR-CHANGE` in the code, and listed for developer review.
 
 ## Bit manipulation
 
