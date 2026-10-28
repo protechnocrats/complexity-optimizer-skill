@@ -184,6 +184,10 @@ Each language file covers built-in data structures and their costs, which struct
 | `REPORTING.md` | Report format, behavior changes for review, bug log, `NEEDS-TESTING` and `BEHAVIOR-CHANGE` markers |
 | `languages/*.md` | Per-language companions |
 
+## Evaluating the skill
+
+The [`evals/`](evals/README.md) folder has test projects in Kotlin and TypeScript with planted cases: straightforward fixes, techniques whose assumptions do not hold, ordering traps, planted bugs, security traps, and code that is not worth changing. Each has an answer key and a scorecard. See [`evals/README.md`](evals/README.md) to run them with and without the skill.
+
 ## Contributing
 
 New language companion files are welcome. Use [`languages/GENERIC.md`](skills/complexity-optimizer/languages/GENERIC.md) as the checklist for what to cover, follow the structure of the existing files, add a row to the detection table in `SKILL.md`, and cite official documentation for every complexity and ordering claim.
