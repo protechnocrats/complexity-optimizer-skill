@@ -17,7 +17,7 @@ Rank items by expected real-world impact. Use this format for each:
 - **Location:** `path/to/File.kt:123` — `functionName`
 - **What it does:** One or two sentences in plain language.
 - **Callers and usage:** Who calls it, how often, on which thread, typical and maximum input sizes (state the assumption and its source).
-- **Current complexity:** Time O(...) [worst | average | amortized], space O(...), in terms of named variables.
+- **Current complexity:** Time O(...) [worst | average | amortized], space O(...), in terms of named variables. Include the cost of the functions it calls and, when callers invoke it in a loop, the total cost along the call chain.
 - **Lower bound:** O(...) because ...
 - **Difficulty:** Straightforward (strongest candidate reaches the lower bound with the standard library and no behavior risks) | Nontrivial.
 - **Candidates considered:** Straightforward: the strongest candidate and why alternatives are unnecessary. Nontrivial: at least three plausible approaches:

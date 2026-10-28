@@ -31,6 +31,20 @@ Most wrong optimizations come from a technique used outside its assumptions.
 
 "Expected" means averaged over the algorithm's randomness or hash behavior; "amortized" means averaged over a sequence of operations; neither is a worst-case guarantee (rule 9).
 
+## Start from the current complexity
+
+Find the row for the candidate's current cost, measured along the call chain (see Phase 2 in `WORKFLOW.md`), not only inside the function body. Start with the sections it names, then still check every other section whose signals match.
+
+| Current cost | Usual cause | Look first at |
+|---|---|---|
+| O(n!) | Trying every ordering or assignment | Bitmask DP ("Bit manipulation"); sorting by a key when an exchange argument shows the order is determined ("Reusing work", greedy) |
+| O(cⁿ) | Recursion that branches over overlapping subproblems; trying every subset | Memoization, DP, knapsack DP ("Reusing work"); meet-in-the-middle, branch and bound, constraint propagation ("Combinatorial search" in `ADVANCED-TECHNIQUES.md`). If the problem is NP-hard in general, check whether small integer weights or targets allow a pseudo-polynomial DP, or whether the input size keeps exact search affordable |
+| O(n³) or higher polynomial | Triple-nested loops; a quadratic loop that calls a linear helper | Precompute what the innermost loop recomputes (prefix sums, a hash index); sort plus two pointers ("Combinations"); "Dynamic programming optimizations" in `ADVANCED-TECHNIQUES.md` |
+| O(n²) | Nested loops over related collections; a linear search or front removal inside a loop | "Lookup, membership, counting", "Order and search", "Structures for repeated queries", "Combinations" |
+| A product of size variables (O(n·m), O(V·E)) | For each A, scan all B | "Invert the loop" under "Reformulate before choosing": index one side once. Name every variable; the right fix depends on which one is large |
+| O(n log n) | A sort, or n heap or tree operations | Whether the order is observable at all; top-k, min, or max without a full sort ("Priority and selection"); non-comparison sorts for bounded keys |
+| O(n) per call, called many times | Recomputing from scratch on every call | "Precompute once, query many times" and "Incremental maintenance" under "Reformulate before choosing"; "Structures for repeated queries" |
+
 ## Required enumeration
 
 For each candidate, write down:
@@ -52,6 +66,7 @@ A lower bound tells you when to stop. Common ones:
 - **Search in unsorted data:** Ω(n) per query. Repeated queries change the picture: build an index once in O(n), then answer each in O(1) expected.
 - **Search in sorted data:** comparison-based lookup takes Θ(log n). For repeated exact-key queries, a hash index gives O(1) expected lookup after O(n) expected preprocessing and O(n) extra space. It does not pay off for a one-off query, it must preserve the original equality semantics, and its worst-case lookup is slower.
 - **Output size:** if the result has k elements, Ω(k). Listing all pairs is Ω(n²) when there can be n² pairs.
+- **No known faster algorithm:** some problems have only conjectured bounds. No algorithm substantially faster than O(n²) is known for 3SUM (three elements summing to a target) and the many problems that reduce to it. No polynomial algorithm is known for NP-hard problems such as 0/1 knapsack, subset sum, or the traveling salesperson. Stop there and say the bound is conjectured; do not promise better.
 - **Repeated calls:** when a function is called m times on the same or slowly changing data, the real cost is total work across all calls. Preprocessing once plus cheap queries can beat any per-call algorithm.
 
 If the chosen approach is above the lower bound, say why: the better bound needs an unapproved dependency, needs preprocessing that the call pattern cannot amortize, needs an assumption the code does not satisfy, or has constant factors that lose at realistic sizes (backed by a benchmark).

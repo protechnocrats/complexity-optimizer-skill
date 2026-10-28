@@ -23,7 +23,8 @@ For each candidate, establish before analyzing it:
 1. **What it computes.** Read the function and the functions it calls. Write one or two sentences of plain-language description.
 2. **Who uses it.** Search all callers, including reflection, dependency injection, serialization, and UI bindings where relevant. Note public API exposure.
 3. **How often and how large.** Estimate realistic `n` (and every other size variable) and call frequency from callers, data sources, UI limits, pagination, and tests. Write the assumption down.
-4. **Hot or cold.** Main thread, per-frame, per-request, per-item, startup, or rare background work.
+4. **Cost along the call chain.** Multiply the function's cost by how many times its callers invoke it per operation: loops in callers, per-item callbacks, per-frame or per-request calls. A function that is optimal for a single call can be the inner loop of a cubic computation. When it is, analyze the caller as the candidate; the fix often belongs there (for example, build an index once, then look up) rather than in the function, which may stay unchanged.
+5. **Hot or cold.** Main thread, per-frame, per-request, per-item, startup, or rare background work.
 
 Drop candidates where `n` is provably tiny and the path is cold, but list them in the report as "not worth changing" so the developer sees they were considered.
 
@@ -32,7 +33,7 @@ Drop candidates where `n` is provably tiny and the path is cold, but list them i
 For each remaining candidate, record:
 
 1. **Problem statement.** Restate the function as an abstract problem ("count pairs with sum k," "find the latest event per user," "check membership against a fixed list"). Abstract statements match known techniques.
-2. **Current complexity.** Time and space, in every size variable, labeled worst, average, or amortized. Include hidden costs from library calls.
+2. **Current complexity.** Time and space, in every size variable, labeled worst, average, or amortized. Include hidden costs from library calls and from the project functions it calls, and the total cost along the call chain from Phase 2.
 3. **Lower bound.** The best complexity any correct algorithm could achieve, with the reason. See "Lower bounds" in `ALGORITHM-ARSENAL.md`.
 4. **Candidates.** From `ALGORITHM-ARSENAL.md` (and `ADVANCED-TECHNIQUES.md` when the core techniques do not reach the lower bound or the problem domain calls for it), in proportion to difficulty (rule 6). Straightforward: the strongest candidate plus a brief reason alternatives are unnecessary. Nontrivial: at least three plausible approaches, including at least one combination when the problem has more than one dimension (ordering plus lookup, range plus count, and so on). For each: time, space (preprocessing separately from per-query cost), the assumptions it needs and the evidence from the code that they hold, standard library or dependency, behavior risks.
 5. **Choice.** The best approach and why. If it does not reach the lower bound, explain why the gap remains (for example, a better bound needs a dependency the developer has not approved, or needs preprocessing that the call pattern cannot amortize).

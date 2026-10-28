@@ -97,3 +97,4 @@ Follow [WORKFLOW.md](WORKFLOW.md):
 12. Applying a behavior-changing optimization without documenting it and getting the developer's explicit approval, even when the change looks like an improvement.
 13. Claiming behavior is proven equivalent because differential tests pass, or presenting an estimated speedup as a measured one.
 14. Padding the candidate list with implausible alternatives, or labeling a problem straightforward to skip the comparison.
+15. Analyzing a function in isolation and missing that its callers run it inside loops, or looking only for quadratic code and missing exponential, factorial, and cubic costs.
