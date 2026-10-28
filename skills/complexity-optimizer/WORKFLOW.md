@@ -15,7 +15,7 @@ Follow these phases in order. Report mode stops after Phase 4.
 Find candidates. Prefer evidence over guessing:
 
 - Profiler output, slow-trace logs, or a specific complaint from the developer come first.
-- Then scan for structural signals: nested loops over the same or related collections, linear searches inside loops (`contains`, `indexOf`, `find`, `includes`), repeated sorting, removal from the front of arrays, string building in loops, recursion without memoization over overlapping subproblems, database or network calls inside loops, work repeated on every UI frame or recomposition.
+- Then scan for structural signals: nested loops over the same or related collections (including triple-nested loops), recursion that branches more than once per call, enumeration of subsets or permutations, linear searches inside loops (`contains`, `indexOf`, `find`, `includes`), repeated sorting, removal from the front of arrays, string building in loops, recursion without memoization over overlapping subproblems, database or network calls inside loops, work repeated on every UI frame or recomposition.
 - Use the "hidden costs" section of each loaded language file.
 
 For each candidate, establish before analyzing it:
