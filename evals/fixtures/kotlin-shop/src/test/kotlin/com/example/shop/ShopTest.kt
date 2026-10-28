@@ -79,4 +79,15 @@ class ShopTest {
     fun workingDays() {
         assertEquals(listOf("Mon", "Tue", "Wed", "Thu", "Fri"), workingDayLabels())
     }
+
+    @Test
+    fun crateValue() {
+        val items = listOf(CrateItem("a", 5, 10), CrateItem("b", 4, 40), CrateItem("c", 6, 30), CrateItem("d", 3, 50))
+        assertEquals(90L, maxCrateValue(items, capacityKg = 10))
+    }
+
+    @Test
+    fun bundles() {
+        assertEquals(2L, countBundles(intArrayOf(100, 200, 300, 400, 500), budgetCents = 900))
+    }
 }

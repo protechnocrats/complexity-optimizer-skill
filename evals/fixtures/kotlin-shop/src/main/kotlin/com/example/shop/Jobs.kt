@@ -11,6 +11,9 @@ object Volumes {
     const val CATALOG_PRODUCTS = 1_000_000
     const val PARCELS_PER_BATCH = 50_000
     const val WAREHOUSE_STATIONS = 80_000
+    const val ITEMS_PER_CRATE_PLAN = 80
+    const val CRATE_CAPACITY_KG = 1_500
+    const val PRODUCTS_PER_BUNDLE_SEARCH = 4_000
 }
 
 class NightlyJobs(
@@ -37,4 +40,8 @@ class NightlyJobs(
 
     fun routing(adjacency: Map<String, List<String>>, from: String, to: String) =
         shortestHops(adjacency, from, to)
+
+    fun cratePlanning(items: List<CrateItem>) = maxCrateValue(items, Volumes.CRATE_CAPACITY_KG)
+
+    fun bundleSuggestions(pricesCents: IntArray, budgetCents: Long) = countBundles(pricesCents, budgetCents)
 }

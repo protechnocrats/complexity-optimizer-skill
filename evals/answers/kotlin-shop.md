@@ -18,6 +18,8 @@ Sizes come from `Jobs.kt` (`Volumes`). Bugs planted: K4, K5, K6.
 | K10 | `OrderSummary.kt` `customerNamesForOrders` | 10 (N+1), 5 (unverifiable behavior) |
 | K11 | `Warehouse.kt` `shortestHops` | 14 (Kotlin `ArrayDeque`) |
 | K12 | `Bestsellers.kt` `topSellers` | 6 (nontrivial), stability trap, 14 fallback |
+| K13 | `Crates.kt` `maxCrateValue` | Exponential starting point, NP-hard problem with a pseudo-polynomial DP |
+| K14 | `Bundles.kt` `countBundles` | Cubic starting point, conjectured lower bound (3SUM) |
 
 ## K1. `blockedUsers`
 
@@ -96,3 +98,19 @@ Sizes come from `Jobs.kt` (`Volumes`). Bugs planted: K4, K5, K6.
 - **Behavior to preserve:** `sortedByDescending` is stable, so ties keep input order; `k` larger than the list returns everything; `k = 0` returns an empty list; negative `k` throws `IllegalArgumentException` (from `take`).
 - **Pass:** tie order preserved (for example, the heap breaks ties by original index); edge cases above preserved and tested; benchmark at about 1,000,000 products with k = 10, labeled as measured.
 - **Fail:** ties reordered; negative-`k` behavior changed; estimated speedup reported as measured.
+
+## K13. `maxCrateValue`
+
+- **Expected:** the include-or-skip recursion is O(2ⁿ). It is 0/1 knapsack: memoize on `(index, remainingKg)`, or use a bottom-up DP over capacity. O(n · W) time, where W is the capacity. Sizes from `Volumes`: 80 items and 1,500 kg, so about 120,000 states against 2⁸⁰ subsets. Knapsack is NP-hard; O(n · W) is pseudo-polynomial and is the best known because W is small. After time is settled, the space check reduces the table to a single `LongArray` of size W + 1.
+- **Difficulty:** nontrivial. Candidates: memoized recursion, bottom-up DP by weight, DP by value (worse here, because values are in cents), meet-in-the-middle (2⁴⁰ is still too large), branch and bound.
+- **Pass:** starts from the exponential cost; states that the problem is NP-hard and the bound is pseudo-polynomial; a 1D DP iterates capacity **downward**; negative capacity still returns 0 (an array-backed DP needs a guard, because `LongArray(capacityKg + 1)` throws); negative item values handled as the original does (skipped); differential tests generate random items and capacities.
+- **Fail:** a 1D DP iterating capacity upward (each item can then be packed many times, which gives larger results); claims of polynomial time without naming the W dependency; a crash on negative capacity.
+
+## K14. `countBundles`
+
+- **Expected:** O(n³) → O(n²). The best approach fixes the first index `i`, then scans `k` from `i + 1` while a hash map counts the prices seen between them: O(n²) expected time, O(n) extra space. Sorting a copy plus two pointers, with careful counting of equal prices, gives O(n²) worst case and O(n) extra space. Sizes: 4,000 products, so about 10¹⁰ triples drops to about 1.6 · 10⁷ pairs.
+- **Lower bound:** this is 3SUM counting. No algorithm substantially faster than O(n²) is known, and the report must say the bound is conjectured rather than claim O(n log n) or O(n). Convolution with an FFT over the price range is rejected because prices are not bounded to a small range.
+- **Difficulty:** nontrivial.
+- **Pass:** stops at O(n²) and explains why; sums stay `Long` (with `Int` arithmetic, `[Int.MAX_VALUE, Int.MAX_VALUE, 2]` wraps to 0); the caller's array is not sorted in place; a pair-sum map holding all O(n²) pairs is rejected or flagged as an unbounded memory cost (rule 1); case labels distinguish expected (hash) from worst case (two pointers).
+- **Fail:** claims a bound below O(n²); `pricesCents.sort()` on the input; `Int` sums; reported as quadratic to begin with.
+

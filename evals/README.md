@@ -9,8 +9,8 @@ These evals check whether an agent using the skill makes the right call on code 
 ```
 evals/
 ├── fixtures/
-│   ├── kotlin-shop/   ← 12 cases (Kotlin/JVM, Gradle, JUnit 4)
-│   ├── ts-shop/       ← 9 cases (TypeScript, Node's built-in test runner, no dependencies)
+│   ├── kotlin-shop/   ← 14 cases (Kotlin/JVM, Gradle, JUnit 4)
+│   ├── ts-shop/       ← 11 cases (TypeScript, Node's built-in test runner, no dependencies)
 │   ├── swift-shop/    ← 10 cases (Swift Package Manager, XCTest); not yet verified on a toolchain
 │   ├── c-shop/        ← 9 cases (C11, plain asserts, optional sanitizers)
 │   └── rust-shop/     ← 10 cases (Cargo, no dependencies)

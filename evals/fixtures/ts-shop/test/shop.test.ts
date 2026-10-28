@@ -10,6 +10,9 @@ import { hasAll } from "../src/permissions.ts";
 import { recordEvent, spendReport } from "../src/reports.ts";
 import { signIn } from "../src/session.ts";
 import { currencyLabels } from "../src/currency.ts";
+import { packsNeeded } from "../src/packing.ts";
+import { stockOnHand } from "../src/inventory.ts";
+import { restockList } from "../src/restock.ts";
 
 test("shortest hops", () => {
   const graph = new Map([["a", ["b", "c"]], ["b", ["d"]], ["c", ["d"]], ["d", []]]);
@@ -63,4 +66,26 @@ test("spend report for signed-in user", () => {
 
 test("currency labels", () => {
   assert.deepEqual(currencyLabels(["EUR", "XYZ"]), ["€ EUR", "XYZ"]);
+});
+
+test("fewest packs", () => {
+  assert.equal(packsNeeded(20, [6, 10]), 2);
+  assert.equal(packsNeeded(7, [6, 10]), -1);
+  assert.equal(packsNeeded(0, [6, 10]), 0);
+});
+
+test("stock on hand", () => {
+  assert.equal(stockOnHand([{ sku: "a", quantity: 5 }, { sku: "b", quantity: 2 }, { sku: "a", quantity: -3 }], "a"), 2);
+});
+
+test("restock list", () => {
+  const stores = [
+    { id: "s1", movements: [{ sku: "a", quantity: 10 }, { sku: "b", quantity: 1 }] },
+    { id: "s2", movements: [{ sku: "a", quantity: 2 }] },
+  ];
+  assert.deepEqual(restockList(stores, ["a", "b"], 2), [
+    { storeId: "s1", sku: "b", onHand: 1 },
+    { storeId: "s2", sku: "a", onHand: 2 },
+    { storeId: "s2", sku: "b", onHand: 0 },
+  ]);
 });

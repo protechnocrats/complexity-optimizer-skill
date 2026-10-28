@@ -39,6 +39,8 @@ Copy this file for each evaluation session. Score each case **P** (pass), **F** 
 | 10 | | | | |
 | 11 | | | | |
 | 12 | | | | |
+| 13 | | | | |
+| 14 | | | | |
 
 Use the case IDs from the answer key (for example K1, T1, S1, C1, R1). Leave unused rows empty.
 

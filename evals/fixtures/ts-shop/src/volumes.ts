@@ -9,4 +9,9 @@ export const VOLUMES = {
   profilesPerPage: 50,
   requestsPerSecond: 3_000,
   eventsInMemory: 400_000,
+  unitsPerShipment: 2_000,
+  packSizesPerSupplier: 8,
+  storesPerRestockRun: 300,
+  catalogSkus: 8_000,
+  movementsPerStore: 25_000,
 };

@@ -15,6 +15,8 @@ Sizes come from `src/volumes.ts`. Bug planted: T5.
 | T7 | `permissions.ts` `hasAll` | 32-bit bitmask trap |
 | T8 | `reports.ts` `spendReport` | Hidden inputs, cache keys, staleness |
 | T9 | `currency.ts` `currencyLabels` | 8 (not worth changing) |
+| T10 | `packing.ts` `packsNeeded` | Exponential starting point, 6 (nontrivial), technique assumptions, caching |
+| T11 | `restock.ts` `restockList` | Cost along the call chain, object key trap |
 
 ## T1. `shortestHops`
 
@@ -70,3 +72,19 @@ Sizes come from `src/volumes.ts`. Bug planted: T5.
 
 - **Expected:** "Not worth changing": five currencies, called once when a screen opens.
 - **Fail:** code changed.
+
+## T10. `packsNeeded`
+
+- **Expected:** the recursion branches once per pack size and recomputes the same remainders, so it is exponential in `units` (about O(k^(units / smallest pack)) worst case for k pack sizes). Replace it with a DP over remainders, either bottom-up or memoized per call: O(units · k) time, O(units) space. Sizes from `volumes.ts`: 2,000 units, 8 pack sizes, so about 16,000 steps. The problem is unbounded change-making, which is NP-hard in general; O(units · k) is pseudo-polynomial and is the best known when `units` is small, which it is here.
+- **Difficulty:** nontrivial. Candidates: memoized recursion, bottom-up DP, BFS over remainders, greedy.
+- **Pass:** starts from the exponential cost (not reported as quadratic); greedy explicitly **rejected** (`packsNeeded(12, [6, 10])` is 2, while greedy largest-first gives -1); any memo is scoped to one call or keyed by the pack sizes too, because each supplier has its own sizes; `-1` for impossible amounts and `0` for zero units preserved; the lower-bound discussion names the pseudo-polynomial bound.
+- **Bonus:** notices that an array-backed DP throws `RangeError` for negative or fractional `units`, where the original returns `-1`, and either guards those inputs or lists the difference under behavior changes for review.
+- **Fail:** greedy applied; a module-level memo keyed only by `units` (after `[6, 10]`, a call with `[12]` for 12 units returns 2 instead of 1); not reported at all.
+
+## T11. `restockList`
+
+- **Expected:** `stockOnHand` is O(m) and optimal for a single lookup, but `restockList` calls it for every catalog SKU in every store: O(S · C · M) for S stores, C catalog SKUs, and M movements per store. Sizes: 300 · 8,000 · 25,000 = 6 · 10¹⁰ steps per nightly run. The fix belongs in the caller: aggregate each store's movements into a `Map` from SKU to quantity once, then look up each catalog SKU. O(S · (M + C)) expected. That reaches the lower bound, since the function must read every movement and check every catalog SKU in every store.
+- **Difficulty:** straightforward once the cost along the call chain is seen.
+- **Pass:** the cost is reported along the call chain, not as "O(m), fine"; `stockOnHand` is left unchanged, since it is exported and optimal on its own; output order (stores in order, catalog order within each store) and duplicate catalog entries are preserved; SKUs that appear in movements but not in the catalog stay excluded.
+- **Fail:** only `stockOnHand` is analyzed, and it is reported as already optimal; a plain object keyed by SKU without guarding prototype keys (a catalog SKU named `constructor` with no movements is dropped instead of reported with 0 on hand); `stockOnHand`'s signature changed.
+
