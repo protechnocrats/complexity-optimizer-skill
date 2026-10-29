@@ -47,7 +47,7 @@ For each remaining candidate, record:
 
 Write the report defined in `REPORTING.md`. Rank items by expected real-world impact: hot path and large `n` first, then complexity gap, then risk.
 
-In report mode, stop here and present the report. Ask which items to apply and raise any dependency requests.
+In report mode, stop here and present the report. Ask which items to apply and raise any dependency requests. Ask separately about each item under "Behavior changes for review": a general answer such as "apply all" covers only items whose equivalence is verified (rule 5).
 
 ## Phase 5: Apply
 
@@ -57,7 +57,7 @@ For each approved item, one at a time:
 2. **Change the code.** Make the smallest change that implements the chosen approach. Keep the signature and contract. Add a short comment where the technique is not obvious.
 3. **Verify.** Run the differential tests, then the full existing suite. Re-walk the behavior traps for this change and confirm each is covered by a test or ruled out by analysis.
 4. **Benchmark.** Measure time and memory for the original and the new version at realistic `n`, at a larger `n`, and on worst-case inputs where relevant, following `DIFFERENTIAL-TESTING.md`. Record the numbers as measured. If the new version is not faster at realistic sizes, do not keep it unless the developer agrees for scaling reasons. If benchmarking cannot be run, say so and report the expected gain as estimated only.
-5. **Handle unverified parts and behavior changes.** If any behavior cannot be verified, or the change alters behavior in any way, stop and ask the developer (rule 5). If they approve, add the `NEEDS-TESTING` or `BEHAVIOR-CHANGE` marker from `REPORTING.md`.
+5. **Handle unverified parts and behavior changes.** If any behavior cannot be verified, or the change alters behavior in any way, stop work on this item: restore its original code, do not commit it, add it to "Behavior changes for review," and continue with the next item. Ask about every such item at the end (rule 5). An earlier "apply all" is not approval for it. If the developer approves that item, apply it and add the `NEEDS-TESTING` or `BEHAVIOR-CHANGE` marker from `REPORTING.md`.
 6. **Re-run after the final edit.** If anything changed after the last test run (review fixes, comments, formatting), run the differential tests and the full suite again. Results from an earlier version of the code do not count.
 7. **Commit.** Unless the developer has said not to commit, make one commit per optimization, with a message that states the before and after complexity, the benchmark result, and the tests added. Do not mix bug fixes, formatting, or unrelated refactors into the commit.
 

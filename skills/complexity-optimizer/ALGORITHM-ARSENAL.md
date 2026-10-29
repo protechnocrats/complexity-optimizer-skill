@@ -237,7 +237,7 @@ Some techniques in this file and in `ADVANCED-TECHNIQUES.md` necessarily change 
 
 - Never apply a behavior-changing optimization silently.
 - Document it in the report under "Behavior changes for review," with the exact behavior before and after.
-- Apply it only after the developer explicitly approves that item, then add the `BEHAVIOR-CHANGE` marker from `REPORTING.md`.
+- Apply it only after the developer explicitly approves that item (a general "apply all" is not approval), then add the `BEHAVIOR-CHANGE` marker from `REPORTING.md`.
 
 This includes changes that look like improvements: a function that fails faster, returns results in a "more sensible" order, or no longer throws an exception callers may rely on. Those are behavior changes, and the developer decides.
 

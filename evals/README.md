@@ -88,6 +88,16 @@ Write-mode cases (IDs ending in `W1`, `W2`, and so on) test new code, not existi
 3. Decline every approval and dependency request, as above. Write mode should still finish the feature without them.
 4. Check that existing files are unchanged unless the case says otherwise (`git status`, `git diff`), that the new tests and the existing suite pass, and score the case.
 
+## Running headlessly with Claude Code
+
+`evals/run-pilot.sh` runs ts-shop (report, apply, decline) and TW1 with and without the skill through `claude -p`, and keeps every transcript, the cost, the git state, and the test results under `~/complexity-optimizer-evals/`. It limits tools to file reads and edits plus `npm test`, `node`, and `git`, and caps spending per turn. Start it detached so it survives closing the terminal:
+
+```bash
+nohup setsid evals/run-pilot.sh --runs 3 --parallel 2 --budget 5 > /dev/null 2>&1 &
+```
+
+Follow `progress.log` in the output directory, then score each session in a copy of `SCORECARD.md`. Results from past runs are in `results/`.
+
 ## Getting meaningful results
 
 - **Run each fixture three times.** Agents vary between runs; one run proves little.
