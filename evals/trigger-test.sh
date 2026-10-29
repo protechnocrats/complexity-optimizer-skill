@@ -47,10 +47,10 @@ import csv, json, sys, pathlib
 prompts, out = sys.argv[1], pathlib.Path(sys.argv[2])
 rows = list(csv.DictReader(open(prompts), delimiter="\t"))
 print("| ID | Expected | Loaded | Cost | Prompt |\n|---|---|---|---|---|")
-right = total = 0
+right = total = errors = 0
 for r in rows:
     for log in sorted((out / "logs").glob(f"{r['id']}-*.jsonl")):
-        loaded, cost = False, 0.0
+        loaded, cost, error = False, 0.0, None
         for line in log.read_text().splitlines():
             try: e = json.loads(line)
             except ValueError: continue
@@ -58,10 +58,17 @@ for r in rows:
                 for c in e["message"].get("content", []):
                     if c.get("type") == "tool_use" and c["name"] == "Skill" and "complexity-optimizer" in str(c["input"].get("skill", "")):
                         loaded = True
-            if e.get("type") == "result": cost = e.get("total_cost_usd") or 0
+            if e.get("type") == "result":
+                cost = e.get("total_cost_usd") or 0
+                if e.get("is_error"): error = e.get("api_error") or e.get("result") or "error"
+        # A session that errored (usage limit, API failure) never decided, so it is not scored.
+        if error and not loaded:
+            errors += 1
+            print(f"| {log.stem} | {r['expect']} | error: {str(error)[:40]} | ${cost:.2f} | {r['prompt'][:80]} |")
+            continue
         ok = loaded == (r["expect"] == "load")
         right += ok; total += 1
         print(f"| {log.stem} | {r['expect']} | {'yes' if loaded else 'no'}{'' if ok else ' ✗'} | ${cost:.2f} | {r['prompt'][:80]} |")
-print(f"\nCorrect: {right} of {total}")
+print(f"\nCorrect: {right} of {total}" + (f" ({errors} sessions errored and are not scored; rerun them)" if errors else ""))
 EOF
 note "trigger test finished"

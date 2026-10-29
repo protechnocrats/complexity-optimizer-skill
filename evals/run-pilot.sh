@@ -7,11 +7,12 @@ set -uo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: evals/run-pilot.sh [--runs N] [--parallel P] [--budget USD] [--out DIR]
+Usage: evals/run-pilot.sh [--runs N] [--parallel P] [--budget USD] [--out DIR] [--cases ts,tw1]
 
   --runs N       Runs per case and condition (default 1)
   --parallel P   Sessions at a time (default 2)
   --budget USD   Spending cap per turn, passed to --max-budget-usd (default 5)
+  --cases LIST   Cases to run, comma-separated: ts, tw1 (default both)
   --out DIR      Output directory (default ~/complexity-optimizer-evals/pilot-<timestamp>)
 
 Progress: <out>/progress.log. Per session: <out>/<session>/ (the run
@@ -19,13 +20,14 @@ directory) and <out>/logs/<session>.* (transcripts, cost, git and test state).
 EOF
 }
 
-runs=1; parallel=2; budget=5; out=""
+runs=1; parallel=2; budget=5; out=""; cases="ts tw1"
 while [ $# -gt 0 ]; do
   case "$1" in
     --runs) runs="$2"; shift 2 ;;
     --parallel) parallel="$2"; shift 2 ;;
     --budget) budget="$2"; shift 2 ;;
     --out) out="$2"; shift 2 ;;
+    --cases) cases="${2//,/ }"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown option: $1" >&2; usage; exit 1 ;;
   esac
@@ -57,6 +59,10 @@ session() {
        --allowedTools "${allowed[@]}" --max-budget-usd "$budget" \
        --output-format stream-json --verbose > "$log.$turn-$label.jsonl" 2> "$log.$turn-$label.err")
     note "$name: turn $turn ($label) exit=$?"
+    # A turn that ended on an API error (usage limit, overload) did no work: the session is invalid.
+    if tail -1 "$log.$turn-$label.jsonl" 2>/dev/null | grep -q '"is_error":true'; then
+      note "$name: turn $turn ($label) API ERROR, session invalid: $(tail -1 "$log.$turn-$label.jsonl" | grep -o '"result":"[^"]*"')"
+    fi
   }
   local decline="Decline every approval request and every dependency request. Continue with anything that needs no approval, then finish."
 
@@ -75,8 +81,8 @@ session() {
 export -f session note
 export out repo budget progress
 
-note "pilot started: runs=$runs parallel=$parallel budget=\$$budget per turn, skill commit $(git -C "$repo" rev-parse --short HEAD)"
-for case_id in ts tw1; do for cond in skill baseline; do for n in $(seq 1 "$runs"); do
+note "pilot started: cases=$cases runs=$runs parallel=$parallel budget=\$$budget per turn, skill commit $(git -C "$repo" rev-parse --short HEAD)"
+for case_id in $cases; do for cond in skill baseline; do for n in $(seq 1 "$runs"); do
   echo "$case_id $cond $n"
 done; done; done | xargs -P "$parallel" -L 1 bash -c 'session "$0" "$1" "$2"'
 note "pilot finished"

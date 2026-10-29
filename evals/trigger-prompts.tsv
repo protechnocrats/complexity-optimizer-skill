@@ -9,7 +9,7 @@ W3	load	new	Write a function that finds every pair of customers who were invoice
 W4	load	new	Add a function that lists all invoices for one customer. We have about 150,000 invoices a month and it is called on every page load of the account screen.
 W5	load	new	Add catalog search by SKU prefix for an autocomplete box. It runs on every keystroke.
 W6	load	new	Add a function that removes duplicate movements from a store's feed before it is saved. Each store sends about 25,000 movements a night.
-W7	load	new	Add a function that checks, for each incoming request, whether the user has every permission an endpoint requires.
+W7	load	new	Add a function totalStock(stores, sku) that returns a SKU's total units on hand across all stores. The warehouse dashboard calls it once for every SKU it shows.
 W8	load	new	Add a function that merges the price lists of several suppliers into one, where the first supplier listed wins for each SKU.
 N1	skip	trivial	Rename stockOnHand to unitsOnHand everywhere.
 N2	skip	trivial	Add a doc comment to PriceBook.add explaining what it does.
