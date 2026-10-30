@@ -202,7 +202,7 @@ Each language file covers built-in data structures and their costs, which struct
 
 ## Evaluating the skill
 
-The [`evals/`](evals/README.md) folder has test projects in Kotlin, TypeScript, Swift, C, and Rust with planted cases: straightforward fixes, exponential and cubic starting points, costs that only appear along the call chain, techniques whose assumptions do not hold, ordering traps, planted bugs, security traps, and code that is not worth changing. Each has an answer key and a scorecard. See [`evals/README.md`](evals/README.md) to run them with and without the skill.
+The [`evals/`](evals/README.md) folder has test projects in Kotlin, TypeScript, Swift, C, and Rust, plus a held-out Python project never used for tuning, with planted cases: straightforward fixes, exponential and cubic starting points, costs that only appear along the call chain, techniques whose assumptions do not hold, ordering traps, planted bugs, security traps, and code that is not worth changing. Each has an answer key and a scorecard. See [`evals/README.md`](evals/README.md) to run them with and without the skill.
 
 ## Contributing
 

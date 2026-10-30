@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Checks how many tokens each mode must load from the skill, against budgets.
+# Fails (exit 1) when a budget is exceeded, so growth is noticed before it ships.
+# Estimates use about 4 characters per token; compare trends, not exact counts.
+# Usage: evals/token-budget.sh [skill directory]
+set -euo pipefail
+skill="${1:-$(cd "$(dirname "$0")/.." && pwd)/skills/complexity-optimizer}"
+python3 -I - "$skill" <<'PY'
+import sys
+from pathlib import Path
+skill = Path(sys.argv[1])
+tok = lambda *names: sum(len((skill / n).read_text()) for n in names) // 4
+lang = "languages/JAVASCRIPT-TYPESCRIPT.md"  # a typical companion file
+BUDGETS = [  # (what, tokens now, budget)
+    ("SKILL.md, loaded on every trigger", tok("SKILL.md"), 5_200),
+    ("Report mode, required files", tok("SKILL.md", "WORKFLOW.md", "ALGORITHM-ARSENAL.md", "REPORTING.md", "languages/INDEX.md", lang), 17_000),
+    ("Apply mode, added files", tok("DIFFERENTIAL-TESTING.md", "BEHAVIOR-TRAPS.md", "BENCHMARKING.md"), 8_500),
+    ("Write mode, required files", tok("SKILL.md", "WRITING-NEW-CODE.md", "ALGORITHM-ARSENAL.md", "languages/INDEX.md", lang), 14_000),
+]
+largest = max((p for p in skill.rglob("*.md")), key=lambda p: len(p.read_text()))
+BUDGETS.append((f"Largest single file ({largest.relative_to(skill)})", len(largest.read_text()) // 4, 7_000))
+failed = False
+for what, now, budget in BUDGETS:
+    status = "ok" if now <= budget else "OVER BUDGET"
+    failed |= now > budget
+    print(f"{status:12s} {what}: {now:,} tokens (budget {budget:,})")
+print(f"{'':12s} Whole skill: {sum(len(p.read_text()) for p in skill.rglob('*.md')) // 4:,} tokens (loaded only in parts)")
+sys.exit(1 if failed else 0)
+PY

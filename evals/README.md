@@ -13,10 +13,16 @@ evals/
 │   ├── ts-shop/       ← 12 cases + 1 write-mode case (TypeScript, Node's built-in test runner, no dependencies)
 │   ├── swift-shop/    ← 10 cases (Swift Package Manager, XCTest); not yet verified on a toolchain
 │   ├── c-shop/        ← 10 cases (C11, plain asserts, optional sanitizers)
-│   └── rust-shop/     ← 12 cases (Cargo, no dependencies)
+│   ├── rust-shop/     ← 12 cases (Cargo, no dependencies)
+│   └── py-logistics/  ← 6 cases + 1 write-mode case (Python standard library); held out, never used for tuning
 ├── answers/           ← answer keys; never let the agent see these
+├── probes/            ← grading scripts: trap inputs run against the original and a run's final code
 ├── SCORECARD.md       ← copy per session and fill in
-└── new-run.sh         ← creates a fresh run directory outside the repo
+├── new-run.sh         ← creates a fresh run directory outside the repo
+├── run-pilot.sh       ← runs a fixture headlessly with Claude Code, any skill version and model
+├── session-stats.py   ← cost, tokens, and skill files read per session
+├── token-budget.sh    ← fails when the skill's required loading grows past its budgets
+└── trigger-test.sh    ← checks which prompts load the skill
 ```
 
 ## Requirements
@@ -26,6 +32,7 @@ evals/
 - **swift-shop:** Swift 5.9 or newer (Xcode on macOS, or a Swift toolchain on Linux). This fixture has not been run yet; see the status note in `answers/swift-shop.md`.
 - **c-shop:** a C11 compiler (`cc`, `gcc`, or `clang`; set `CC` to choose). `./test.sh sanitize` builds with AddressSanitizer and UBSan where supported.
 - **rust-shop:** Rust 1.80 or newer with Cargo.
+- **py-logistics:** Python 3.10 or newer; standard library only. No language companion file covers Python, so this fixture also tests `languages/GENERIC.md`.
 
 Check that the fixture is green before you start:
 
@@ -35,6 +42,7 @@ cd evals/fixtures/ts-shop && npm test
 cd evals/fixtures/swift-shop && swift test
 cd evals/fixtures/c-shop && ./test.sh && ./test.sh sanitize
 cd evals/fixtures/rust-shop && cargo test
+cd evals/fixtures/py-logistics && ./test.sh
 ```
 
 ## Running one evaluation
@@ -90,13 +98,43 @@ Write-mode cases (IDs ending in `W1`, `W2`, and so on) test new code, not existi
 
 ## Running headlessly with Claude Code
 
-`evals/run-pilot.sh` runs ts-shop (report, apply, decline) and TW1 with and without the skill through `claude -p`, and keeps every transcript, the cost, the git state, and the test results under `~/complexity-optimizer-evals/`. It limits tools to file reads and edits plus `npm test`, `node`, and `git`, and caps spending per turn. Start it detached so it survives closing the terminal:
+`evals/run-pilot.sh` runs a fixture's report flow (report, "apply all", decline every approval) and its write-mode case through `claude -p`, and keeps every transcript, the git state, and the test results under `~/complexity-optimizer-evals/`. It limits tools to file reads and edits plus the fixture's test command and `git`, and caps spending per turn. Options:
+
+- `--fixture ts-shop | py-logistics`
+- `--cases report,write` and `--conditions skill,baseline`
+- `--skill-ref <commit>` installs the skill as it was at that commit, to compare versions
+- `--model <model>` runs another model
+- `--runs N`, `--parallel P`, `--budget USD`, `--out DIR`
+
+Start it detached so it survives closing the terminal:
 
 ```bash
-nohup setsid evals/run-pilot.sh --runs 3 --parallel 2 --budget 5 > /dev/null 2>&1 &
+nohup setsid evals/run-pilot.sh --fixture py-logistics --runs 3 > /dev/null 2>&1 &
 ```
 
-Follow `progress.log` in the output directory, then score each session in a copy of `SCORECARD.md`. Results from past runs are in `results/`.
+Follow `progress.log` in the output directory. Then:
+
+1. `python3 -I evals/session-stats.py <out>` for cost, tokens, and the skill files each session opened.
+2. The fixture's probe for each session's final code: `python3 -I evals/probes/py-logistics.py <session directory>`, or `node evals/probes/ts-shop.ts evals/fixtures/ts-shop/src <session directory>/src`.
+3. Score each session in a copy of `SCORECARD.md`, using the answer key and the probe's output.
+
+Sessions that hit a usage limit are marked "API ERROR, session invalid" in `progress.log`: rerun them rather than scoring them. Results from past runs are in `results/`.
+
+`evals/token-budget.sh` checks the skill's required loading per mode against budgets without running an agent. Run it after every change to the skill.
+
+## Round 3 plan
+
+Round 3 measures the discovery, verification, systems, and hostile-input work (commit `8054142`) against the skill before it (`3e73373`) and against no skill.
+
+| Step | Command | Sessions |
+|---|---|---|
+| 1. Static budget | `evals/token-budget.sh` | — |
+| 2. Regression on the tuned fixture | `run-pilot.sh --fixture ts-shop --cases report --conditions skill --runs 3`, once with the current skill and once with `--skill-ref 3e73373` | 6 |
+| 3. Held-out fixture | `run-pilot.sh --fixture py-logistics --runs 3`, once with the current skill and baseline, once with `--skill-ref 3e73373 --conditions skill` | 18 |
+| 4. Second model | `run-pilot.sh --fixture py-logistics --model <another model> --runs 3` | 12 |
+| 5. Grade | `session-stats.py`, the probes, and `SCORECARD.md` per session | — |
+
+Run steps 2 to 4 in separate time windows, or with `--parallel 1`, to stay inside usage limits. Round 2 costs suggest about $3.30 per report-flow session with the skill, $1 without it, and under $0.50 per write-mode session: roughly $60 for the whole round on the default model.
 
 ## Getting meaningful results
 
