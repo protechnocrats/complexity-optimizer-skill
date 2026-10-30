@@ -76,3 +76,9 @@ Shifting by a count greater than or equal to the bit width panics in debug build
 - **Undefined behavior checks:** run tests under Miri (`cargo +nightly miri test`) whenever `unsafe` code is involved.
 - **Benchmarks:** use `criterion` or `divan` if already present (both are dependencies otherwise; ask). Without them, write a timing harness with `std::time::Instant` and `std::hint::black_box` (stable since 1.66) to stop the compiler from removing work. Always benchmark with `--release`.
 - **Memory:** `dhat` (a dependency), heaptrack, or Valgrind Massif for peak heap and allocation counts.
+- **Verification beyond tests** (see "Verification levels" in `DIFFERENTIAL-TESTING.md`; dependencies or installs, so ask unless present): Kani for bounded model checking with `#[kani::proof]` harnesses, including equivalence of the old and new function over bounded inputs; loom to run concurrent code under every thread interleaving up to a bound; Verus, Prusti, or Creusot for proofs of contracts.
+- **Constant-time comparison** (for secrets; see `techniques/hostile-inputs.md`): the `subtle` crate's `ConstantTimeEq` (a dependency, so ask unless present), never `==` on secret slices.
+
+## References (for verifying claims; not required reading)
+
+- Rust collections, with a table of operation costs: doc.rust-lang.org/std/collections/index.html

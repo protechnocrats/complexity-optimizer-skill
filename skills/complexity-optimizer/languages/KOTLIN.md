@@ -111,3 +111,9 @@ Shifts use only the low 5 bits (`Int`) or 6 bits (`Long`) of the shift count, so
 - **Tests:** JUnit 4 or 5, `kotlin.test`, Kotest; Robolectric for Android framework code; Turbine for Flow.
 - **Property-based testing, if already present:** Kotest property testing (`kotest-property`), jqwik.
 - **Benchmarks, if already present:** Jetpack Microbenchmark (`androidx.benchmark`) on device, kotlinx-benchmark or JMH on the JVM. Otherwise use a timing harness in test code with `System.nanoTime()` and warmup iterations, and note that JIT and debug builds distort results.
+- **Verification beyond tests** (see "Verification levels" in `DIFFERENTIAL-TESTING.md`; ask unless present): Lincheck checks concurrent data structures for linearizability, with a model-checking mode that enumerates interleavings; on JVM targets, jcstress and JBMC from `JAVA.md` also apply.
+- **Constant-time comparison** (for secrets; see `techniques/hostile-inputs.md`): on the JVM, `java.security.MessageDigest.isEqual`, never `contentEquals` or `==` on secrets.
+
+## References (for verifying claims; not required reading)
+
+- Kotlin collections: kotlinlang.org/docs/collections-overview.html; API reference: kotlinlang.org/api/core/kotlin-stdlib/

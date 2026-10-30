@@ -75,3 +75,9 @@ Swift's `<<` and `>>` are "smart shifts": overshifting gives 0 (or -1 for negati
 - **Tests:** XCTest and Swift Testing (`@Test`, `#expect`, Swift 6 / Xcode 16+).
 - **Property-based testing, if already present:** SwiftCheck. Otherwise use a seeded generator (for example, a small linear-congruential or SplitMix generator conforming to `RandomNumberGenerator`) so cases reproduce.
 - **Benchmarks:** XCTest `measure { }` with release-mode builds, or the `package-benchmark` package if already present (a dependency otherwise). Debug builds are dramatically slower and misleading.
+- **Verification beyond tests** (see "Verification levels" in `DIFFERENTIAL-TESTING.md`): Thread Sanitizer (`-sanitize=thread`) for data races; the Swift 6 language mode's complete concurrency checking, which rejects data races at compile time. No mainstream bounded model checker targets Swift: reach level 3 by enumerating small domains exhaustively in tests.
+- **Constant-time comparison** (for secrets; see `techniques/hostile-inputs.md`): CryptoKit's message-authentication-code and digest types compare in constant time with `==`; raw byte arrays do not, so compare those with a loop that combines every byte difference without exiting early, and verify it.
+
+## References (for verifying claims; not required reading)
+
+- Swift standard library: developer.apple.com/documentation/swift; Swift Collections package: github.com/apple/swift-collections

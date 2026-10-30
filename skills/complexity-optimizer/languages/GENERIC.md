@@ -13,10 +13,10 @@ Before Phase 3, write down for the project's language and version, from official
 5. **Numbers.** Integer widths, overflow behavior (wrap, trap, or arbitrary precision), and bitwise operator semantics.
 6. **Evaluation model.** Eager or lazy collections, value or reference semantics, and copy-on-write behavior.
 7. **Native versus host platform.** If the language runs on or interoperates with another platform (JVM, .NET, JavaScript runtimes, Objective-C, C libraries), list which structures the language provides itself and which come only from the platform. Prefer the language's own when both exist (rule 14).
-8. **Tooling.** The test framework, any property-based testing library already in the project, and the benchmark tool already in the project.
+8. **Tooling.** The test framework, any property-based testing library already in the project, the benchmark tool and profiler already in the project, the language's constant-time comparison primitive for secrets, and any verification tools for the language (bounded model checkers, concurrency checkers, proof tools; see "Verification levels" in `DIFFERENTIAL-TESTING.md`).
 
 If the documentation does not state a cost or a guarantee, treat it as unknown: do not rely on it for an optimization, and mention it in the report.
 
 ## Then follow the normal workflow
 
-All rules, `WORKFLOW.md`, `ALGORITHM-ARSENAL.md`, `DIFFERENTIAL-TESTING.md`, and `BEHAVIOR-TRAPS.md` apply unchanged. Tell the developer that no dedicated language file exists and that the profile above was built during the run.
+All rules, `WORKFLOW.md`, `ALGORITHM-ARSENAL.md`, `CORE-TECHNIQUES.md`, `DIFFERENTIAL-TESTING.md`, `BENCHMARKING.md`, and `BEHAVIOR-TRAPS.md` apply unchanged. Tell the developer that no dedicated language file exists and that the profile above was built during the run.

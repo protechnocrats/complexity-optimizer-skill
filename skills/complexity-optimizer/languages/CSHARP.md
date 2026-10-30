@@ -81,3 +81,9 @@ Shift counts are masked to 5 bits for `int` and 6 bits for `long`.
 - **Tests:** xUnit, NUnit, MSTest.
 - **Property-based testing, if already present:** FsCheck, CsCheck.
 - **Benchmarks, if already present:** BenchmarkDotNet (a dependency otherwise; ask). Use Release builds. Without it, use `Stopwatch` with warmup and medians in test code.
+- **Verification beyond tests** (see "Verification levels" in `DIFFERENTIAL-TESTING.md`; ask unless present): Coyote for systematic testing of concurrent and asynchronous code, which explores interleavings and replays failures; Dafny for proofs, compiling verified code to C#.
+- **Constant-time comparison** (for secrets; see `techniques/hostile-inputs.md`): `CryptographicOperations.FixedTimeEquals`, never `SequenceEqual` on secrets.
+
+## References (for verifying claims; not required reading)
+
+- .NET collections: learn.microsoft.com/en-us/dotnet/standard/collections/; API: learn.microsoft.com/en-us/dotnet/api/system.collections.generic

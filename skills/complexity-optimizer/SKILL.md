@@ -5,7 +5,7 @@ description: Lower time complexity and choose the right data structures in any p
 
 # Complexity Optimizer
 
-Make code fast by lowering its time complexity, using the right data structures, and removing hidden costs: in existing code without changing its behavior, and in new code from the first version. The skill is language-agnostic: the rules and workflows apply to every language, and per-language companion files add detail where they exist. In existing code, never change behavior: every change is backed by differential tests that show the old and new code produce the same observable results, or it is clearly flagged for the developer.
+Make code fast by lowering its time complexity, using the right data structures, and removing hidden costs: in existing code without changing its behavior, and in new code from the first version, in any language. Load only the files a step names, and within large files only the sections it names.
 
 ## Mandatory rules
 
@@ -13,14 +13,14 @@ These rules apply to every project. They apply as written in report and apply mo
 
 1. **Time is invaluable. Space is cheap, but not infinite.** Extra memory is acceptable when it buys time. Memory must stay bounded and must not cost time through GC pressure, cache misses, or OOM crashes. Every cache, memo table, or index you add has an explicit size bound or a proof that it is bounded by input size the program already holds. Bounded is not enough when the project has a hard memory budget (embedded targets, kernels, per-request or per-process limits, mobile): an approach whose memory exceeds that budget is not a valid candidate, however fast it is.
 2. **Time first, then space.** Look for space optimizations only after time complexity is optimal. Never reduce space by making time complexity worse, and never make time worse to save memory (for example, replacing an O(1) `HashMap` with an O(log n) array-backed map just to save memory). The one exception: when the code exceeds a hard memory budget (rule 1), so it fails or cannot run at the required size, a technique that trades time for memory (external sorting, recomputation such as gradient checkpointing, streaming) may be proposed. Present both costs, and apply it only with the developer's approval.
-3. **Understand before changing, and verify behavior is unchanged.** Before touching a function, establish what it computes, who calls it, how often, and with what input sizes. Write differential tests that run the original and the optimized version on the same inputs and compare every observable result. Behavior before and after must be identical. Passing tests are evidence, not proof: never claim equivalence is proven because differential tests pass. Report the inputs and properties covered, the tests and tools actually run, and any behavior left unverified. See [DIFFERENTIAL-TESTING.md](DIFFERENTIAL-TESTING.md) and [BEHAVIOR-TRAPS.md](BEHAVIOR-TRAPS.md).
+3. **Understand before changing, and verify behavior is unchanged.** Before touching a function, write its contract (what it requires, what it returns, what it changes, throws, or calls) and establish who calls it, how often, and with what input sizes. Write differential tests that run the original and the optimized version on the same inputs and compare every observable result. Behavior before and after must be identical. Report the verification level each change reached (tested, property-checked, exhaustively checked to a stated bound, or proven) and aim for the highest level that is cheap to reach: see "Verification levels" in [DIFFERENTIAL-TESTING.md](DIFFERENTIAL-TESTING.md). Only a machine-checked proof, or a check of every input in the whole domain, may be called proven; passing tests are evidence, not proof. Report the inputs and properties covered, the tests and tools actually run, and any behavior left unverified. See also [BEHAVIOR-TRAPS.md](BEHAVIOR-TRAPS.md).
 4. **Bugs are always documented, and never fixed on purpose.** Record every bug in the bug log and tell the developer in the conversation. What happens to the code depends on whether it can be optimized:
    - **The buggy code cannot be optimized.** It is already optimal, or no optimization can be verified to keep behavior unchanged. Leave the code exactly as it is. Document the bug and tell the developer.
    - **The buggy code can be optimized.** Apply the optimization through the normal workflow (differential tests, benchmark, behavior-trap review) and tell the developer about the bug. Never add code, or choose or adjust an approach, in order to fix the bug. If the optimization keeps the bug, the bug stays. If the best optimization (rule 6) removes the bug as a side effect, keep the fix: confirm with differential tests that outputs differ only on inputs that trigger the bug, record it in the bug log as fixed as a side effect, and mark the code with `BEHAVIOR-CHANGE`.
 
    If it is unclear whether the old behavior is a bug or an intended contract (for example, an exception the code throws on purpose that callers may catch), do not treat it as a bug: any change to it is a behavior change under rule 5. A crash from exhausting a resource (stack overflow, out of memory) on input the code accepts is never a contract: no caller can rely on the size at which it happens, so it is a bug, and removing it as a side effect follows rule 4.
 5. **Behavior changes are never silent.** Two cases need the developer's decision before anything is applied:
-   - **Unverified equivalence:** tests cannot verify that behavior is unchanged (some observable behavior is not covered).
+   - **Unverified equivalence:** no verification reached here shows that behavior is unchanged (some observable behavior is covered by no test, check, or tool at any level).
    - **Known behavior change:** the optimization alters any observable behavior other than a bug removed as a side effect under rule 4, including changes that look like improvements (failing faster, a different order, approximate instead of exact results, no longer throwing an exception callers may rely on).
 
    Document each one for developer review with the exact behavior before and after, and what is unverified. Apply it only after the developer explicitly approves that item. Then mark it in the code and in the report: `NEEDS-TESTING` for unverified equivalence, `BEHAVIOR-CHANGE` for a known change. See [REPORTING.md](REPORTING.md).
@@ -30,14 +30,14 @@ These rules apply to every project. They apply as written in report and apply mo
    **A risk that can change results is a behavior change.** If any input the code accepts can produce a different observable result (for example, an index that goes stale when a caller edits an entry's key after adding it), the item is a known behavior change or unverified equivalence, not a footnote under "risks." List it under "Behavior changes for review."
 
    **Found during apply mode:** if analysis or a differential test shows that an item falls under either case, do not keep or commit that change. Restore the original code for that item, add it to "Behavior changes for review," continue with the other approved items, and ask about it at the end. Offer the best equivalent alternative if one exists.
-6. **Strive for the best possible complexity.** Do not stop at the first improvement. Whatever the starting complexity (factorial, exponential, polynomial of any degree, or a product of several size variables), establish the theoretical lower bound for the problem and keep looking for better approaches until you reach it or can explain why you stopped above it. A bound below the size of the input (O(log n), O(1)) is only possible when the work is amortized over repeated queries or the input is already structured, such as sorted or indexed. Enumerate candidate approaches with [ALGORITHM-ARSENAL.md](ALGORITHM-ARSENAL.md), and with [ADVANCED-TECHNIQUES.md](ADVANCED-TECHNIQUES.md) when the core techniques do not reach the lower bound or the problem falls in a specialized domain. That file is an index: load only the domain files under `techniques/` that it routes the problem to. Confirm every technique's assumptions from the code.
+6. **Strive for the best possible complexity.** Do not stop at the first improvement. Whatever the starting complexity (factorial, exponential, polynomial of any degree, or a product of several size variables), establish the theoretical lower bound for the problem and keep looking for better approaches until you reach it or can explain why you stopped above it. A bound below the size of the input (O(log n), O(1)) is only possible when the work is amortized over repeated queries or the input is already structured, such as sorted or indexed. Find candidate approaches with [ALGORITHM-ARSENAL.md](ALGORITHM-ARSENAL.md), which routes the problem to sections of [CORE-TECHNIQUES.md](CORE-TECHNIQUES.md), and with [ADVANCED-TECHNIQUES.md](ADVANCED-TECHNIQUES.md) when the core techniques do not reach the lower bound or the problem falls in a specialized domain. That file is an index: load only the domain files under `techniques/` that it routes the problem to. When no known technique fits the problem or reaches its lower bound, derive one with [DISCOVERY.md](DISCOVERY.md), the method for finding better algorithms. Confirm every technique's assumptions from the code.
 
    Compare approaches in proportion to the problem's difficulty. A problem is **straightforward** only when the strongest candidate reaches the stated lower bound, needs no new dependency (the standard library, or a structure the project already has), and has no behavior risks; then name that candidate and briefly explain why alternatives are unnecessary. Every other problem is **nontrivial**: evaluate at least three plausible approaches, including combinations where relevant. Never invent alternatives merely to meet a quota.
 
    Analysis never stops early: always identify and report the best achievable approach and the lower bound. Applying is evidence-driven: recommend applying a change only when measurements or a stated workload estimate show it pays off, and do not add a specialized structure solely for a better asymptotic bound. Stop applying once the bottleneck is resolved or the remaining cost is at the lower bound, and record what remains.
 7. **Data structures must earn their place.** Introduce a data structure only when it reduces time complexity or a measured cost. If the structure is not in the language's standard library and would require a new dependency, explain why and ask the developer for permission before adding it. A small structure written inside the project is not a dependency, but it needs its own tests.
-8. **Measure, do not only reason.** Big-O describes growth, not speed at a given size. Estimate realistic input sizes and call frequency. If `n` is provably tiny and the code is not hot, report the finding but do not change the code. "Provably tiny" means a bound visible in the code or data (a fixed enum, a constant-size table, a validated limit), not a guess about typical use; "not hot" means the code does not run per item, per request, per frame, or inside another loop. Benchmark time and memory before and after any applied change at realistic and larger sizes. Always label results as **measured** (benchmark or profile actually run) or **estimated** (complexity analysis or workload reasoning). If verification or benchmarking cannot be completed, state the limitation and do not present the optimization as a confirmed win.
-9. **State which case you mean.** Label every complexity as worst-case, average-case (averaged over a stated input distribution), expected (averaged over the algorithm's own randomness or hashing), or amortized (averaged over a sequence of operations). Hash-based structures are O(1) expected but can degrade in the worst case; this matters when users or attackers control keys.
+8. **Measure, do not only reason.** Big-O describes growth, not speed at a given size. Estimate realistic input sizes and call frequency. If `n` is provably tiny and the code is not hot, report the finding but do not change the code. "Provably tiny" means a bound visible in the code or data (a fixed enum, a constant-size table, a validated limit), not a guess about typical use; "not hot" means the code does not run per item, per request, per frame, or inside another loop. When the code can run, profile it to find where the time actually goes before choosing what to change; in report mode, without changing the project's files. Before benchmarking a change, write down the predicted speedup and growth exponent; when the measurement disagrees with the prediction, revise the analysis before trusting either. Benchmark time and memory before and after any applied change at realistic and larger sizes, as in [BENCHMARKING.md](BENCHMARKING.md). Always label results as **measured** (benchmark or profile actually run) or **estimated** (complexity analysis or workload reasoning). Never call a change faster because the code is shorter, uses a newer API or library, uses a more sophisticated technique, or has a better complexity class: only a measurement, or a workload estimate that names the sizes and the cost model, supports a speed claim. If verification or benchmarking cannot be completed, state the limitation and do not present the optimization as a confirmed win.
+9. **State which case you mean.** Label every complexity as worst-case, average-case (averaged over a stated input distribution), expected (averaged over the algorithm's own randomness or hashing), or amortized (averaged over a sequence of operations). Hash-based structures are O(1) expected but can degrade in the worst case; this matters when users or attackers control keys. When untrusted parties control the input, the code handles secrets, or it runs under a hard deadline, the worst case is the one that counts: see [techniques/hostile-inputs.md](techniques/hostile-inputs.md).
 10. **Look beyond CPU loops.** Database queries in loops (N+1), network calls in loops, main-thread blocking, repeated parsing, and repeated I/O often dominate CPU complexity. Treat them as complexity problems.
 11. **Keep the public contract.** Do not change a public function signature, return type, mutability of a returned collection, threading behavior, or error contract without asking.
 12. **Start green.** Run the existing test suite before changing anything. If it fails, report the failures and stop until the developer decides how to proceed. Run it again after every change. If the project has no test suite, or the suite cannot run in this environment (missing toolchain or hardware, a kernel or firmware that must boot, a service that is not available), say so and continue: report mode is unaffected, and in apply mode the differential tests you write become the only automated check. Run them as a standalone test program if no test framework exists. If even they cannot run, every change is unverified (rule 5).
@@ -77,52 +77,31 @@ This skill is agent-neutral. "The agent" is whatever coding agent loads it. Wher
 
 ## Language detection
 
-This skill works for any programming language. Before analysis, identify the project's languages from build and source files. If a companion file exists for a language, load it. For every other language, load [languages/GENERIC.md](languages/GENERIC.md), which has the agent build the same language profile before analyzing; all rules and the full workflow still apply. A missing companion file is never a reason to skip or weaken the workflow.
-
-Companion files available now:
-
-| Signals | Load |
-|---|---|
-| `*.kt`, `*.kts`, Kotlin Gradle plugin | [languages/KOTLIN.md](languages/KOTLIN.md) (and [languages/JAVA.md](languages/JAVA.md) only for JVM structures Kotlin lacks; rule 14) |
-| `*.java`, `pom.xml`, `build.gradle` without Kotlin | [languages/JAVA.md](languages/JAVA.md) |
-| `*.swift`, `Package.swift`, `*.xcodeproj` | [languages/SWIFT.md](languages/SWIFT.md) |
-| `*.js`, `*.mjs`, `*.ts`, `*.tsx`, `package.json`, `tsconfig.json` | [languages/JAVASCRIPT-TYPESCRIPT.md](languages/JAVASCRIPT-TYPESCRIPT.md) |
-| `*.cs`, `*.csproj`, `*.sln` | [languages/CSHARP.md](languages/CSHARP.md) |
-| `*.c`, `*.h` (without C++ sources), C build files (`Makefile`, `CMakeLists.txt`, `meson.build`) | [languages/C.md](languages/C.md) |
-| `*.rs`, `Cargo.toml` | [languages/RUST.md](languages/RUST.md) |
-| Any other language | [languages/GENERIC.md](languages/GENERIC.md) |
-
-In a project with several languages, load the file for each language you analyze.
-
-Also record the language and runtime version (Kotlin/JVM vs Kotlin Multiplatform, Java version, Swift version, Node or browser target, .NET version). Standard-library availability depends on it.
+Identify the project's languages and runtime versions from build and source files, then load the matching companion file listed in [languages/INDEX.md](languages/INDEX.md), one per language you analyze. For any other language, load [languages/GENERIC.md](languages/GENERIC.md). A missing companion file is never a reason to skip or weaken the workflow.
 
 ## Workflow
 
 Write mode follows [WRITING-NEW-CODE.md](WRITING-NEW-CODE.md). Report and apply modes follow [WORKFLOW.md](WORKFLOW.md):
 
-1. **Setup** — detect languages, versions, test and benchmark tooling; run the existing test suite.
-2. **Survey** — find candidate hotspots; for each, learn what it does, who calls it, how often, and with what sizes.
-3. **Analyze** — state the problem, current complexity, lower bound, and candidate approaches from [ALGORITHM-ARSENAL.md](ALGORITHM-ARSENAL.md) (and [ADVANCED-TECHNIQUES.md](ADVANCED-TECHNIQUES.md) when needed) in proportion to difficulty (rule 6), with each one's assumptions checked; pick the best.
+1. **Setup** — detect languages, versions, test, benchmark, profiling, and verification tooling; run the existing test suite.
+2. **Survey** — profile when the code can run; find candidate hotspots; for each, write its contract, learn who calls it, how often, and with what sizes, name the resource that limits it, and check its exposure (untrusted input, secrets, hard deadlines).
+3. **Analyze** — state the problem, current complexity, lower bound, and candidate approaches (rule 6), with each one's assumptions checked; pick the best, say why not better, write the prediction, and plan the verification level.
 4. **Report** — write the ranked report defined in [REPORTING.md](REPORTING.md). Report mode ends here.
-5. **Apply** — for each approved item: differential tests on the original first, then the change, then tests, behavior-trap review, and benchmark.
-6. **Close out** — final report with applied changes, benchmark results, bugs found, and anything marked as needing testing.
+5. **Apply** — for each approved item: differential tests and contract checks on the original first, then the change, then verification at the planned level, behavior-trap review, and a benchmark compared with the prediction.
+6. **Close out** — final report with applied changes and their verification levels, measurements against predictions, changes tried and rejected, bugs found, anything marked as needing testing, and regression guards the developer kept.
 
 ## Anti-patterns
 
-1. Stopping at the first improvement without checking whether a better bound exists.
-2. Claiming a complexity without naming the case (worst, average, expected, amortized) or the variable it depends on.
-3. "Optimizing" code where `n` is tiny and the call is cold, then presenting it as a win.
-4. Replacing a structure and silently changing iteration order, sort stability, duplicates, or nullability.
-5. Fixing a bug on purpose, or picking an approach because it fixes a bug. Only bugs removed as a side effect of the best optimization are allowed (rule 4), and every bug is documented and reported.
-6. Memoizing or caching a function that is not pure, or adding a cache with no bound.
-7. Adding a dependency without asking.
-8. Making time complexity worse to save memory, outside the hard-budget exception in rule 2.
-9. Differential tests that compare only return values while ignoring input mutation, exceptions, side effects, and order.
-10. Rewriting idiomatic code into an unreadable form for a constant-factor gain that was never measured.
-11. Using a technique outside its assumptions (a sliding window over values that can be negative, Dijkstra with negative weights, binary search on a predicate that is not monotonic).
-12. Applying a behavior-changing optimization without documenting it and getting the developer's explicit approval of that item, even when the change looks like an improvement, or treating a general "apply all" as that approval.
-13. Claiming behavior is proven equivalent because differential tests pass, or presenting an estimated speedup as a measured one.
-14. Padding the candidate list with implausible alternatives, or labeling a problem straightforward to skip the comparison.
-15. Analyzing a function in isolation and missing that its callers run it inside loops, or looking only for quadratic code and missing exponential, factorial, and cubic costs.
+The failures seen most often, each a breach of the rule named:
+
+1. Applying a behavior change on a general "apply all," or because it looks like an improvement (rule 5).
+2. Fixing a bug on purpose, or choosing an approach because it fixes one (rule 4).
+3. Calling a change proven or verified without the level to back it, presenting an estimated speedup as a measured one, or calling code faster because it is shorter, newer, or more sophisticated (rules 3 and 8).
+4. Stopping at the first improvement, padding the candidate list with implausible alternatives, or labeling a problem straightforward to skip the comparison (rule 6).
+5. Using a technique outside its assumptions: a sliding window over values that can be negative, Dijkstra with negative weights, binary search on a predicate that is not monotonic (rule 6).
+6. Analyzing a function in isolation and missing that its callers run it inside loops, or looking only for quadratic code and missing exponential, factorial, and cubic costs (rule 6).
+7. Replacing a structure and silently changing iteration order, sort stability, duplicates, or nullability; differential tests that compare only return values (rule 3).
+8. Caching an impure function, or adding a cache with no bound (rule 1).
+9. Rewriting idiomatic code into an unreadable form for a constant-factor gain that was never measured (rules 8 and 13).
 
 Write mode has its own anti-patterns in [WRITING-NEW-CODE.md](WRITING-NEW-CODE.md).

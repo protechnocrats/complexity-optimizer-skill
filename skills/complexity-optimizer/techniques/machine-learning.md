@@ -70,3 +70,10 @@ Model API calls are network calls: rule 10 applies.
 | One API call per item in a loop (embeddings, classifications) | Batch endpoints, or bounded concurrency within the provider's rate limits | Errors, retries, and partial failures handled per item as before; ordering of results preserved | Fewer round trips; higher throughput |
 | Same request sent repeatedly | Cache responses keyed by every input that affects the output: model name and version, full prompt, parameters, tools, and settings | Cached output must be acceptable as the answer. With sampling (temperature above 0), a cache returns one fixed sample where the original produced a new one each time: **behavior change**. Bounded, with invalidation when the model version changes | API calls avoided |
 | Long shared prompt prefix sent with every request | The provider's prompt caching, with the stable prefix placed first | Prompt content unchanged | Lower latency and cost for the cached prefix |
+
+## References (for verifying claims; not required reading)
+
+- Tri Dao et al., "FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness," NeurIPS 2022.
+- Woosuk Kwon et al., "Efficient Memory Management for Large Language Model Serving with PagedAttention," SOSP 2023.
+- Yaniv Leviathan, Matan Kalman, and Yossi Matias, "Fast Inference from Transformers via Speculative Decoding," ICML 2023.
+- Charles Elkan, "Using the Triangle Inequality to Accelerate k-Means," ICML 2003.

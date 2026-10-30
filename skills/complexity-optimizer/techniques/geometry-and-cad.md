@@ -20,3 +20,8 @@ For CAD and CAM, GIS, 3D modeling, mesh processing, and geometry kernels. Robust
 | Polygon Boolean operations (union, intersection, difference) by testing every edge pair | Sweep-line clipping (Vatti, Martinez-Rueda) | Robust predicates; output orientation and vertex order match, or the difference is approved | O(n·m) → O((n + m + k) log(n + m)) |
 | Evaluating Bezier or B-spline curves at many parameter values | De Casteljau or de Boor evaluation, or Horner's method on the power form; forward differencing for evenly spaced steps | Forward differencing accumulates rounding error: behavior change. Changing the evaluation method changes floating-point results | Per point O(d²) → O(d) for degree d; O(1) per step with forward differencing |
 | Exact (arbitrary-precision) geometric predicates evaluated on every test | Floating-point filter with an exact fallback (adaptive-precision predicates, as in Shewchuk's) | Results identical to the exact predicate | Exact results at close to floating-point speed |
+
+## References (for verifying claims; not required reading)
+
+- de Berg, Cheong, van Kreveld, and Overmars, *Computational Geometry: Algorithms and Applications*, 3rd ed. (2008).
+- Jonathan R. Shewchuk, "Adaptive Precision Floating-Point Arithmetic and Fast Robust Geometric Predicates" (1997).

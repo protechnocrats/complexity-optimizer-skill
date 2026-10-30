@@ -19,3 +19,22 @@ A frame has a fixed budget (16.7 ms at 60 frames per second), so the worst frame
 | Allocation, garbage collection, or asset loading during gameplay | Object pools, preallocated buffers, asynchronous asset streaming | Pooled objects are fully reset before reuse | Removes frame-time spikes |
 | Game objects with their data scattered across memory | Entity-component-system storage: each component type in a contiguous array | See "Memory locality" in `techniques/hardware-and-concurrency.md` | Fewer cache misses per frame |
 | Assets, events, or properties looked up by string name during frames | Hash names to integer IDs once at load time | IDs are unique; collisions detected at load time | String hashing and comparison removed from frames |
+
+## Game-tree search
+
+For game AI, puzzle solvers, and any adversarial or turn-based decision search (two players, or a player against nature). The search returns a move and usually a score; both are observable. A faster search must return the same move and score, or the change is a behavior change.
+
+| Signal | Technique | Valid when | Typical result |
+|---|---|---|---|
+| Full minimax over a game tree of branching factor b and depth d | Alpha-beta pruning | Returns the same root value as minimax; the same move only if ties among equal-valued moves are broken the same way (alpha-beta may stop at the first best move it finds) | O(b^d) → about O(b^(d/2)) with good move ordering; O(b^d) with the worst ordering |
+| Alpha-beta that searches poor moves first | Move ordering: the best move from the previous iteration first, then captures, killer moves, and the history heuristic | Ordering changes only pruning, never the value; tie-breaking among equal moves checked as above | Closer to the O(b^(d/2)) best case |
+| The same position reached by different move orders and searched again | Transposition table keyed by a Zobrist hash (XOR of a random number per piece and square, updated incrementally), with a fixed size and a replacement policy | Hash collisions verified or made negligible with 64-bit keys; stored bounds (exact, lower, upper) used correctly with the alpha-beta window; table size bounded (rule 1) | Repeated subtrees searched once; position hashing O(1) per move instead of O(board) |
+| A fixed-depth search that must finish within a time budget | Iterative deepening: search depth 1, 2, 3, … until time runs out, reusing the previous iteration's best move for ordering | Depth reached now depends on time and machine speed: a behavior change if the original searched a fixed depth | Uses the budget fully; the overhead of shallower iterations is small, since the last depth dominates |
+| Branching factor too large for alpha-beta (Go, large strategy games), or no reliable evaluation function | Monte Carlo tree search with UCT selection | Results are randomized and approximate: a behavior change unless replacing another randomized search with the same seeding | Effort concentrated on promising moves; anytime, with quality improving with time |
+
+## References (for verifying claims; not required reading)
+
+- Christer Ericson, *Real-Time Collision Detection* (2004); Jason Gregory, *Game Engine Architecture*, 3rd ed. (2018).
+- Donald E. Knuth and Ronald W. Moore, "An Analysis of Alpha-Beta Pruning," *Artificial Intelligence* 6(4), 1975.
+- Albert L. Zobrist, "A New Hashing Method with Application for Game Playing" (1970).
+- Cameron B. Browne et al., "A Survey of Monte Carlo Tree Search Methods," *IEEE Transactions on Computational Intelligence and AI in Games* 4(1), 2012.

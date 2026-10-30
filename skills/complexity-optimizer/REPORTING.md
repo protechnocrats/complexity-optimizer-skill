@@ -9,35 +9,59 @@ For a small result (one or two items), present the report in the conversation. O
 
 ## Optimization item format
 
-Rank items by expected real-world impact. Use this format for each:
+Rank items by expected real-world impact. Use the full format below for nontrivial items (rule 6) and for any item with behavior risks or an exposure. Straightforward items and items not worth changing use the compact format, so the report stays proportional:
 
 ```markdown
 ### <ID>. <Short title>
 
 - **Location:** `path/to/File.kt:123` — `functionName`
-- **What it does:** One or two sentences in plain language.
+- **Contract:** What it returns and changes, in one line.
+- **Now → recommended:** O(...) → O(...) [case], at the lower bound because ...; or "not worth changing" with the size bound and why the path is cold (rule 8).
+- **Evidence and verification:** Bottleneck evidence (profile, measurement, or estimate); planned or reached verification level.
+- **Status:** As in the full format.
+```
+
+Full format:
+
+```markdown
+### <ID>. <Short title>
+
+- **Location:** `path/to/File.kt:123` — `functionName`
+- **Contract:** What it requires (preconditions), what it returns (including order, ties, and duplicates), and what it changes, throws, or calls (effects). State what the code and its callers show, and mark anything inferred.
 - **Callers and usage:** Who calls it, how often, on which thread, typical and maximum input sizes (state the assumption and its source).
+- **Bottleneck:** The resource that limits this code (CPU, memory, I/O, network, lock, or queue) and the evidence: profile, trace, query plan, benchmark, developer report, or static estimate only.
+- **Exposure:** None, or untrusted input | secret-dependent | hard deadline, with the worst-case bound and the defense (keyed hashing, limits, constant time, preallocation) from `techniques/hostile-inputs.md`.
 - **Current complexity:** Time O(...) [worst | average | amortized], space O(...), in terms of named variables. Include the cost of the functions it calls and, when callers invoke it in a loop, the total cost along the call chain.
 - **Lower bound:** O(...) because ... Basis: proven (for example, must read every input) | conditional (holds only under a stated assumption, such as comparison-based sorting) | conjectured (no faster algorithm is known, such as 3SUM) | workload-dependent (follows from the measured or stated call pattern).
 - **Difficulty:** Straightforward (strongest candidate reaches the lower bound, needs no new dependency, and has no behavior risks) | Nontrivial.
-- **Candidates considered:** Straightforward: the strongest candidate and why alternatives are unnecessary. Nontrivial: at least three plausible approaches:
+- **Candidates considered:** Straightforward: the strongest candidate and why alternatives are unnecessary. Nontrivial: at least three plausible approaches, each with how it was found (a table row, a move from `DISCOVERY.md`, or a published source) and its provenance: established (common name and a standard reference), experimental (the publication, and that it is new), or derived in this analysis (its correctness argument). Mark each citation "checked" (read in this session or listed in the skill's references) or "not checked":
   1. <Approach> — time O(...) (preprocessing and per-query separately), space O(...), notes.
   2. <Approach> — time O(...), space O(...), notes.
   3. <Approach or combination> — time O(...), space O(...), notes.
-- **Recommended:** <Approach> — time O(...), space O(...). Why it wins. If above the lower bound, why.
+- **Recommended:** <Approach> — time O(...), space O(...). Why it wins.
+- **Why not better:** At the lower bound, or what blocks the remaining gap (a dependency, a call pattern that cannot amortize preprocessing, an assumption the code does not satisfy, a measured constant factor). When no table row reached the bound, the `DISCOVERY.md` moves tried and what each gave.
 - **Kind of win:** One or more of: Asymptotic (the growth rate changes, for example O(n²) → O(n log n)) | Constant-factor (same bound; fewer allocations, cache misses, branch misses, or instructions) | Work avoided (caching, batching, early exit, incremental updates). Never present a constant-factor or work-avoided win as a complexity reduction.
 - **Memory bound:** What new memory is used and why it is bounded.
 - **Dependency needed:** None, or the library name, version, license, and why (requires developer permission).
 - **Behavior risks:** Traps from BEHAVIOR-TRAPS.md that apply, and how each will be covered.
-- **Bottleneck evidence:** Profile, trace, query plan, benchmark, developer report, or static estimate only.
 - **Assumptions:** Each assumption the technique needs and the evidence from the code that it holds.
 - **Behavior changes:** None, or the exact behavior before and after (rule 5).
-- **Verification:** Inputs and properties covered (edge cases, number of generated cases, seeds, sizes), tests and tools actually run with results, and behavior left unverified. Never "proven".
-- **Status:** Proposed | Applied (verified by tests) | Applied (NEEDS-TESTING, developer approved) | Applied (BEHAVIOR-CHANGE, developer approved) | Awaiting developer review | Skipped (reason) | Not worth changing (n is small and the path is cold).
-- **Performance:** Measured: time and memory before and after at realistic n, larger n, and worst-case inputs where relevant, with environment, run count, median, and variance, as absolute values and percentage change. Estimated: the theoretical gain, labeled as estimated. If measurement could not be completed, say why; the item is not a confirmed win.
+- **Prediction:** Written before any benchmark runs: the expected speedup at realistic n and the expected growth exponent of each version.
+- **Verification:** The level reached (tested | property-checked | exhaustively checked, with the domain | proven, with the tool and what it proved; see "Verification levels" in `DIFFERENTIAL-TESTING.md`), the inputs and properties covered (edge cases, number of generated cases, seeds, sizes), tests and tools actually run with results, and behavior left unverified. "Proven" only at that level.
+- **Status:** Proposed | Applied (verified: <level>) | Applied (NEEDS-TESTING, developer approved) | Applied (BEHAVIOR-CHANGE, developer approved) | Awaiting developer review | Skipped (reason) | Not worth changing (n is small and the path is cold).
+- **Performance:** Measured: time and memory before and after at realistic n, larger n, and worst-case inputs where relevant, with environment, run count, median, and variance, as absolute values and percentage change, with the measured growth exponent and a comparison against the prediction. When they disagree, the explanation found. Estimated: the theoretical gain, labeled as estimated. If measurement could not be completed, say why; the item is not a confirmed win.
+- **Reproduce:** The commands, seeds, input generators, and environment needed to rerun the tests and benchmarks.
 ```
 
 Also list candidates that were considered and dropped, with the reason, so the developer sees what was checked.
+
+## Tried and rejected
+
+Negative results are findings: they stop the next person from repeating the attempt. In `OPTIMIZATION-REPORT.md`, keep a "Tried and rejected" section for every change that was built or benchmarked and then not kept:
+
+```markdown
+- **<Short title>** (`path/to/File.kt:123`): <what was tried>. Predicted: <speedup, exponent>. Measured: <result, with environment>. Rejected because: <slower, within noise, worse memory, failed verification, behavior change declined>.
+```
 
 ## Bug log format
 
@@ -97,7 +121,7 @@ Also list every marked change in a "Needs testing" section at the top of `OPTIMI
 
 End every run with a short summary in the conversation:
 
-- Items applied and verified by tests, with a one-line summary of the evidence for each.
+- Items applied and verified, with the verification level and a one-line summary of the evidence for each.
 - Items applied with developer approval but marked `NEEDS-TESTING`.
 - Items applied with developer approval that knowingly change behavior (`BEHAVIOR-CHANGE`).
 - Behavior changes still awaiting developer review.
@@ -105,4 +129,6 @@ End every run with a short summary in the conversation:
 - Bugs found (count and IDs).
 - Dependency requests pending.
 - Test suite status before and after, from runs on the final code.
-- Which performance numbers are measured and which are estimated, and any verification that could not be completed.
+- Which performance numbers are measured and which are estimated, predictions that the measurements contradicted, and any verification that could not be completed.
+- Changes tried and rejected.
+- Regression guards left in place (benchmarks or tests the developer chose to keep), and how to run them.

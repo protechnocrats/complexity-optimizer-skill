@@ -5,8 +5,11 @@ Rewrites that look equivalent but are not. Walk this list for every candidate in
 ## Ordering
 
 - **Iteration order of hash structures.** Replacing a list with a hash set or hash map, or an insertion-ordered map with an unordered one, changes the order callers see. Some platforms randomize hash order per process (Swift), so a test can pass once and fail later. Preserve order with an insertion-ordered structure, or keep the original list for output and use the hash structure only for lookups.
-- **Sort stability.** Switching between a stable and an unstable sort changes the relative order of equal elements. Check which sorts are stable in the language file.
+- **Sort stability.** Switching between a stable and an unstable sort changes the relative order of equal elements. Check which sorts are stable in the language file. Timsort and merge sort are stable; introsort, pattern-defeating quicksort, and heapsort are not.
+- **Adaptive and hybrid algorithms.** When an implementation picks a branch by input size, shape, or CPU features, each branch can differ in stability, tie choice, `NaN` handling, floating-point bits, or errors. Tests at one size or on one machine then pass while other inputs differ. Test every branch, inputs on both sides of every crossover, and each CPU-feature variant.
 - **Ties.** "First match," "max by," and "min by" may pick a different element among equals after a rewrite.
+- **Enumeration order.** A faster enumeration (Gray-code, revolving-door, or swap-based permutation order; a different branching order in a search) visits the same items in a different order. That changes which solution is found first and the order of any output.
+- **Shuffles and random selection.** Replacing a shuffle or a random choice changes the sequence produced for a given seed, and may change the distribution (a shuffle by random comparator is biased, Fisher-Yates is not). Both are behavior changes.
 - **Order of side effects.** Batching, parallelizing, or reordering loops changes the order of writes, logs, events, and callbacks.
 
 ## Equality and keys
@@ -111,6 +114,8 @@ A function is not pure just because its arguments are unchanged. Before caching 
 - **Thread safety.** Replacing a synchronized or concurrent structure with an unsynchronized one, or adding shared mutable caches, introduces races.
 - **Iterator invalidation.** Modifying a collection while iterating it throws or skips elements, depending on the platform.
 - **Changed concurrency.** Running previously sequential work concurrently changes ordering, error behavior (fail-fast versus continue), rate limiting, and resource usage.
+- **Optimistic and speculative execution.** A reader that proceeds without a lock (sequence locks, optimistic concurrency) can see torn or inconsistent data before it validates. It must not act on that data first: no pointer dereference, division, array index, or output. A retry repeats every side effect of the attempt, and speculative work done for a guess that turns out wrong must leave no trace (no writes, logs, or messages).
+- **Missed changes.** Code that switches from rescanning to consuming changes (change feeds, file-system notifications, incremental maintenance) misses updates when the feed overflows, restarts, or is truncated. The original rescan never missed them. Every gap must be detected and fall back to a full rescan.
 
 ## Cancellation, timeouts, and resources
 
@@ -133,7 +138,7 @@ An optimization can be faster while making the system less secure. Treat every i
 - **Adversarial inputs.** Hash-based structures can degrade to their worst case under hash flooding when attackers control keys; prefer structures with worst-case guarantees (or randomized hashing) for untrusted input.
 - **Resource exhaustion.** A faster average case with a much worse worst case (unbounded caches, quadratic behavior on pathological input, unbounded recursion) can create a denial-of-service risk.
 
-If an existing security weakness is found, it is a bug: document it and report it (rule 4).
+If an existing security weakness is found, it is a bug: document it and report it (rule 4). Techniques for optimizing safely under hostile input, around secrets, and under hard deadlines are in `techniques/hostile-inputs.md`.
 
 ## Errors and limits
 
@@ -150,3 +155,8 @@ If an existing security weakness is found, it is a bug: document it and report i
 ## Public contract
 
 - **Signature, return type, nullability, mutability, and threading guarantees** must stay the same unless the developer approves the change (rule 11).
+
+## References (for verifying claims; not required reading)
+
+- David Goldberg, "What Every Computer Scientist Should Know About Floating-Point Arithmetic," *ACM Computing Surveys* 23(1), 1991.
+- Scott A. Crosby and Dan S. Wallach, "Denial of Service via Algorithmic Complexity Attacks," USENIX Security 2003.

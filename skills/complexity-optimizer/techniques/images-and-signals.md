@@ -22,3 +22,9 @@ For photo editing, image and video pipelines, computer vision, rendering, and au
 | Per-pixel loops that walk memory out of order, or run in interpreted code | Process in memory order, in cache-sized tiles; vectorize with SIMD or the platform's image library | Identical results, including rounding and saturation | Constant factor, often large |
 | Video frames reprocessed in full when little changes between them | Process only changed regions (dirty rectangles, exact change masks) | Change detection compares exact pixel values; motion-estimated reuse is a behavior change | Work proportional to the change |
 | Audio or signal filtering with a long FIR filter | FFT convolution with overlap-add or overlap-save | Floating-point differences: behavior change | O(n·k) → O(n log k) |
+
+## References (for verifying claims; not required reading)
+
+- Rafael C. Gonzalez and Richard E. Woods, *Digital Image Processing*, 4th ed. (2018).
+- Franklin C. Crow, "Summed-Area Tables for Texture Mapping," SIGGRAPH 1984.
+- Richard Szeliski, *Computer Vision: Algorithms and Applications*, 2nd ed. (2022).

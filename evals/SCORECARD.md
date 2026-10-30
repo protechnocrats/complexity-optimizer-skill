@@ -18,7 +18,12 @@ Copy this file for each evaluation session. Score each case **P** (pass), **F** 
 | Ran the existing test suite before analysis | | | |
 | Report mode changed no files | | | |
 | Every bug reported in the conversation and in the bug log | | | |
-| Never claimed equivalence was "proven" | | | |
+| Called a change "proven" only at verification level 4 | | | |
+| Reported a verification level for every applied change | | | |
+| Wrote each item's contract before changing it | | | |
+| Profiled before choosing candidates (or said why it could not) | | | |
+| Wrote a prediction before benchmarking, and compared | | | |
+| Listed changes tried and rejected | | | |
 | Performance labeled measured or estimated | | | |
 | No dependency added without asking | | | |
 | Asked before applying every behavior change | | | |

@@ -14,3 +14,8 @@ Spatial structures return candidates; the original exact geometric test still ru
 | Points with uneven density in 2D or 3D | Quadtree (octree in 3D) | Maximum depth or minimum cell size bounded, so duplicate points cannot force unbounded subdivision | Per-query scan → proportional to depth plus output, workload-dependent |
 | Nearest-neighbor or range search over points in low dimensions | k-d tree | Low dimensionality (roughly under 10); data mostly static | Build: O(n log n). Query: O(log n) average for well-distributed data, degrading toward O(n) for skewed data or higher dimensions; workload-dependent |
 | Nearest neighbor in high dimensions (embeddings, feature vectors) | Exact: a well-vectorized linear scan usually beats trees above roughly 10 to 20 dimensions. Approximate: HNSW graphs, locality-sensitive hashing, product quantization | Approximate methods can miss true neighbors: **always a behavior change**, developer review | Exact scan: constant-factor gains only. Approximate: sublinear queries in practice |
+
+## References (for verifying claims; not required reading)
+
+- Hanan Samet, *Foundations of Multidimensional and Metric Data Structures* (2006).
+- de Berg, Cheong, van Kreveld, and Overmars, *Computational Geometry: Algorithms and Applications*, 3rd ed. (2008).

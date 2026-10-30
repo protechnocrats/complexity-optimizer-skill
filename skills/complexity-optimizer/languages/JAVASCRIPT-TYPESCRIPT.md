@@ -77,3 +77,9 @@ Load this file for JavaScript and TypeScript projects. Record the runtime (Node 
 - **Tests:** Jest, Vitest, Mocha, `node:test`; React Testing Library for components.
 - **Property-based testing, if already present:** fast-check.
 - **Benchmarks, if already present:** Vitest `bench`, tinybench, Benchmark.js. Otherwise use `performance.now()` with warmup runs and medians, and keep results observable so the JIT cannot discard work.
+- **Verification beyond tests** (see "Verification levels" in `DIFFERENTIAL-TESTING.md`): fast-check reaches level 2 with shrinking, and its model-based testing (`fc.commands`) checks stateful structures against a simple model. Reach level 3 by enumerating small domains exhaustively in tests. TypeScript's type checker proves type-level facts only, never equivalence.
+- **Constant-time comparison** (for secrets; see `techniques/hostile-inputs.md`): `crypto.timingSafeEqual` in Node.js; in browsers, verify message authentication codes with Web Crypto's `crypto.subtle.verify` rather than comparing bytes.
+
+## References (for verifying claims; not required reading)
+
+- MDN JavaScript reference: developer.mozilla.org/en-US/docs/Web/JavaScript/Reference; ECMAScript specification: tc39.es/ecma262/

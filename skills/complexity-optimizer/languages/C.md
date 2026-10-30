@@ -72,3 +72,9 @@ Use **unsigned** types for bit manipulation. In C:
 - **Sanitizers:** build and run differential tests with `-fsanitize=address,undefined` (GCC and Clang) where available. Also run under Valgrind if the project already uses it.
 - **Benchmarks:** compile both versions with the project's release flags. Time with `clock_gettime(CLOCK_MONOTONIC)` (POSIX) or `QueryPerformanceCounter` (Windows), repeat runs, and report medians. Store results in a `volatile` sink so the compiler cannot remove the measured work. Use `perf` or the platform profiler for cache-miss and hotspot evidence.
 - **Memory:** Valgrind Massif or heaptrack for peak heap; count allocations with a wrapper if no tool is available.
+- **Verification beyond tests** (see "Verification levels" in `DIFFERENTIAL-TESTING.md`; installs, so ask unless present): CBMC for bounded model checking, including equivalence harnesses that assert `old(x) == new(x)` for every input within stated bounds; KLEE for symbolic execution; Frama-C with WP (proofs of ACSL contracts) or E-ACSL (runtime checking of the same contracts).
+- **Constant-time comparison** (for secrets; see `techniques/hostile-inputs.md`): `CRYPTO_memcmp` (OpenSSL), `sodium_memcmp` (libsodium), or `timingsafe_bcmp` where the C library provides it, never `memcmp`.
+
+## References (for verifying claims; not required reading)
+
+- C standard library reference: en.cppreference.com/w/c; GNU C Library manual: www.gnu.org/software/libc/manual/
